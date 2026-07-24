@@ -108,6 +108,8 @@ type AppOrder = {
   status: string;
   statusCode: string;
   paymentStatus: string;
+  createdAt: string;
+  deliveryDateRaw: string | null;
   request?: string;
 
   requestType: string | null;
@@ -190,6 +192,13 @@ type ClientProfileRow = {
   full_name: string;
   phone: string | null;
   created_at: string;
+};
+
+type DashboardPaymentRow = {
+  amount: number | string;
+  status: string;
+  paid_at: string | null;
+  refunded_at: string | null;
 };
 
 type Quote = {
@@ -408,6 +417,8 @@ function mapAdminOrder(
     databaseId: order.id,
     userId: order.user_id,
     id: `#${order.order_number}`,
+    createdAt: order.created_at,
+    deliveryDateRaw: order.delivery_date,
     client: order.customer_name,
     initials: getInitials(
       order.customer_name
@@ -570,6 +581,17 @@ export default function Home() {
     useState<AppReview[]>([]);
 
   const [reviewsLoading, setReviewsLoading] =
+    useState(false);
+
+  const [orderClients, setOrderClients] =
+    useState<ClientProfileRow[]>([]);
+
+  const [
+    orderClientsLoading,
+    setOrderClientsLoading,
+  ] = useState(false);
+
+  const [savingOrder, setSavingOrder] =
     useState(false);
   /*
    * Recupera a sessão do Supabase quando
@@ -1158,6 +1180,68 @@ export default function Home() {
     notifications.length,
   ]);
 
+  useEffect(() => {
+    let componentActive = true;
+
+    async function loadOrderClients() {
+      if (!modal || role !== "admin") {
+        return;
+      }
+
+      setOrderClientsLoading(true);
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          full_name,
+          phone,
+          created_at
+        `)
+        .eq("role", "client")
+        .order("full_name", {
+          ascending: true,
+        });
+
+      if (!componentActive) {
+        return;
+      }
+
+      if (error) {
+        console.error(
+          "Erro ao carregar clientes do pedido:",
+          error
+        );
+
+        setToast(
+          "Não foi possível carregar os clientes."
+        );
+
+        setTimeout(() => {
+          setToast("");
+        }, 2800);
+
+        setOrderClientsLoading(false);
+        return;
+      }
+
+      setOrderClients(
+        (data || []) as ClientProfileRow[]
+      );
+
+      setOrderClientsLoading(false);
+    }
+
+    loadOrderClients();
+
+    return () => {
+      componentActive = false;
+    };
+  }, [modal, role]);
+
   const filteredOrders = useMemo(
     () =>
       appOrders.filter(order =>
@@ -1595,17 +1679,231 @@ export default function Home() {
     }
   }
 
-  function saveOrder(
+  async function saveOrder(
     e: React.FormEvent<HTMLFormElement>
   ) {
     e.preventDefault();
 
-    setModal(false);
-    setToast("Pedido cadastrado com sucesso!");
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
-    setTimeout(() => {
-      setToast("");
-    }, 2800);
+    const clientId = String(
+      formData.get("clientId") || ""
+    );
+
+    const productId = String(
+      formData.get("productId") || ""
+    );
+
+    const quantity = Number(
+      formData.get("quantity") || 0
+    );
+
+    const deliveryDate = String(
+      formData.get("deliveryDate") || ""
+    );
+
+    const deliveryTime = String(
+      formData.get("deliveryTime") || ""
+    );
+
+    const statusCode = String(
+      formData.get("status") || "confirmed"
+    );
+
+    const notes = String(
+      formData.get("notes") || ""
+    ).trim();
+
+    const selectedClient =
+      orderClients.find(
+        client => client.id === clientId
+      );
+
+    const selectedProduct =
+      products.find(
+        product =>
+          String(product.id) === productId
+      );
+
+    if (!selectedClient) {
+      setToast("Selecione um cliente.");
+      setTimeout(() => setToast(""), 2800);
+      return;
+    }
+
+    if (!selectedProduct) {
+      setToast("Selecione um produto.");
+      setTimeout(() => setToast(""), 2800);
+      return;
+    }
+
+    if (
+      !Number.isInteger(quantity) ||
+      quantity <= 0
+    ) {
+      setToast("Informe uma quantidade válida.");
+      setTimeout(() => setToast(""), 2800);
+      return;
+    }
+
+    if (quantity > selectedProduct.stock) {
+      setToast(
+        `Estoque disponível: ${selectedProduct.stock}.`
+      );
+
+      setTimeout(() => setToast(""), 2800);
+      return;
+    }
+
+    setSavingOrder(true);
+
+    try {
+      const {
+        data,
+        error,
+      } = await supabase.rpc(
+        "create_admin_order",
+        {
+          p_client_id: clientId,
+
+          p_items: [
+            {
+              product_id: productId,
+              quantity,
+              customization: {},
+            },
+          ],
+
+          p_status: statusCode,
+
+          p_delivery_date:
+            deliveryDate || null,
+
+          p_delivery_time:
+            deliveryTime || null,
+
+          p_notes:
+            notes || null,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Erro ao criar pedido administrativo:",
+          error
+        );
+
+        setToast(
+          error.message ||
+            "Não foi possível criar o pedido."
+        );
+
+        setTimeout(() => {
+          setToast("");
+        }, 3200);
+
+        return;
+      }
+
+      const result = data as {
+        order_id: string;
+        order_number: number;
+        total_amount: number;
+        status: string;
+      };
+
+      const newOrder: AppOrder = {
+        databaseId: result.order_id,
+        userId: selectedClient.id,
+        id: `#${result.order_number}`,
+        client: selectedClient.full_name,
+
+        initials: getInitials(
+          selectedClient.full_name
+        ),
+
+        item:
+          `${quantity}× ${selectedProduct.name}`,
+
+        time:
+          deliveryTime
+            ? deliveryTime.slice(0, 5)
+            : "A combinar",
+
+        date:
+          deliveryDate
+            ? formatDeliveryDate(
+                deliveryDate
+              )
+            : "Data a combinar",
+
+        value: money(
+          Number(result.total_amount)
+        ),
+
+        status:
+          orderStatusLabel(
+            result.status
+          ),
+
+        statusCode: result.status,
+        paymentStatus: "pending",
+        createdAt:
+          new Date().toISOString(),
+        deliveryDateRaw:
+          deliveryDate || null,
+
+        request: undefined,
+        requestType: null,
+        requestStatus: null,
+        requestedDate: null,
+        requestedTime: null,
+      };
+
+      setAppOrders(currentOrders => [
+        newOrder,
+        ...currentOrders,
+      ]);
+
+      setProducts(currentProducts =>
+        currentProducts.map(product =>
+          String(product.id) === productId
+            ? {
+                ...product,
+                stock:
+                  product.stock - quantity,
+              }
+            : product
+        )
+      );
+
+      form.reset();
+      setModal(false);
+
+      setToast(
+        `Pedido #${result.order_number} cadastrado com sucesso!`
+      );
+
+      setTimeout(() => {
+        setToast("");
+      }, 2800);
+    } catch (unexpectedError) {
+      console.error(
+        "Erro inesperado ao criar pedido:",
+        unexpectedError
+      );
+
+      setToast(
+        "Ocorreu um erro ao criar o pedido."
+      );
+
+      setTimeout(() => {
+        setToast("");
+      }, 2800);
+    } finally {
+      setSavingOrder(false);
+    }
   }
 
   async function handleLogout() {
@@ -1974,7 +2272,7 @@ export default function Home() {
           <Dashboard
             setScreen={setScreen}
             openModal={() => setModal(true)}
-            orders={filteredOrders.slice(0, 3)}
+            orders={appOrders}
           />
         )}
 
@@ -1998,7 +2296,11 @@ export default function Home() {
         )}
 
         {screen === "Produção" && (
-          <Production orders={appOrders} />
+          <Production
+            orders={appOrders}
+            onStatus={handleOrderStatusChange}
+            updatingOrderId={updatingOrderId}
+          />
         )}
 
         {screen === "Cardápio" && (
@@ -2086,78 +2388,125 @@ export default function Home() {
             </div>
 
             <div className="form-grid">
-              <label>
+              <label className="wide">
                 Cliente
 
-                <input
+                <select
                   required
-                  placeholder="Nome do cliente"
-                />
-              </label>
+                  name="clientId"
+                  defaultValue=""
+                  disabled={orderClientsLoading}
+                >
+                  <option value="" disabled>
+                    {orderClientsLoading
+                      ? "Carregando clientes..."
+                      : "Selecione um cliente"}
+                  </option>
 
-              <label>
-                Telefone
-
-                <input
-                  required
-                  placeholder="(22) 99999-9999"
-                />
+                  {orderClients.map(client => (
+                    <option
+                      key={client.id}
+                      value={client.id}
+                    >
+                      {client.full_name}
+                      {client.phone
+                        ? ` — ${client.phone}`
+                        : ""}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="wide">
                 Produto
 
-                <select>
-                  <option>
-                    Bolo Red Velvet
+                <select
+                  required
+                  name="productId"
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    Selecione um produto
                   </option>
 
-                  <option>
-                    Torta de Limão
+                  {products
+                    .filter(
+                      product =>
+                        product.active &&
+                        !product.archived
+                    )
+                    .map(product => (
+                      <option
+                        key={product.id}
+                        value={String(product.id)}
+                        disabled={product.stock <= 0}
+                      >
+                        {product.name} —{" "}
+                        {product.price} — estoque:{" "}
+                        {product.stock}
+                      </option>
+                    ))}
+                </select>
+              </label>
+
+              <label>
+                Quantidade
+
+                <input
+                  required
+                  name="quantity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  defaultValue="1"
+                />
+              </label>
+
+              <label>
+                Status inicial
+
+                <select
+                  required
+                  name="status"
+                  defaultValue="confirmed"
+                >
+                  <option value="pending">
+                    Aguardando
                   </option>
 
-                  <option>
-                    Kit Festa 30 pessoas
+                  <option value="confirmed">
+                    Confirmado
                   </option>
 
-                  <option>
-                    Pedido personalizado
+                  <option value="in_production">
+                    Em produção
                   </option>
                 </select>
               </label>
 
               <label>
                 Data da entrega
-                <input required type="date" />
-              </label>
 
-              <label>
-                Horário
-                <input required type="time" />
-              </label>
-
-              <label>
-                Valor
                 <input
-                  required
-                  placeholder="R$ 0,00"
+                  name="deliveryDate"
+                  type="date"
                 />
               </label>
 
               <label>
-                Status
+                Horário
 
-                <select>
-                  <option>Aguardando</option>
-                  <option>Confirmado</option>
-                  <option>Em produção</option>
-                </select>
+                <input
+                  name="deliveryTime"
+                  type="time"
+                />
               </label>
 
               <label className="wide">
                 Observações
 
                 <textarea
+                  name="notes"
                   placeholder="Detalhes, decoração, sabor, restrições..."
                 />
               </label>
@@ -2172,8 +2521,16 @@ export default function Home() {
                 Cancelar
               </button>
 
-              <button className="primary">
-                Salvar pedido
+              <button
+                className="primary"
+                disabled={
+                  savingOrder ||
+                  orderClientsLoading
+                }
+              >
+                {savingOrder
+                  ? "Salvando pedido..."
+                  : "Salvar pedido"}
               </button>
             </div>
           </form>
@@ -5789,34 +6146,477 @@ function NotificationPanel({
   );
 }
 
-function Dashboard({ setScreen, openModal, orders }: { setScreen: (s: Screen) => void; openModal: () => void; orders: any[] }) {
+function Dashboard({
+  setScreen,
+  openModal,
+  orders,
+}: {
+  setScreen: (screen: Screen) => void;
+  openModal: () => void;
+  orders: AppOrder[];
+}) {
+  const [payments, setPayments] =
+    useState<DashboardPaymentRow[]>([]);
+
+  const [dashboardLoading, setDashboardLoading] =
+    useState(true);
+
+  function localDateKey(date: Date) {
+    const year = date.getFullYear();
+
+    const month = String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+    const day = String(
+      date.getDate()
+    ).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  useEffect(() => {
+    let componentActive = true;
+
+    async function loadDashboardPayments() {
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("payments")
+        .select(`
+          amount,
+          status,
+          paid_at,
+          refunded_at
+        `);
+
+      if (!componentActive) {
+        return;
+      }
+
+      if (error) {
+        console.error(
+          "Erro ao carregar resumo financeiro:",
+          error
+        );
+
+        setDashboardLoading(false);
+        return;
+      }
+
+      setPayments(
+        (data || []) as DashboardPaymentRow[]
+      );
+
+      setDashboardLoading(false);
+    }
+
+    loadDashboardPayments();
+
+    return () => {
+      componentActive = false;
+    };
+  }, []);
+
+  const summary = useMemo(() => {
+    const today = localDateKey(
+      new Date()
+    );
+
+    const ordersToday = orders.filter(
+      order =>
+        localDateKey(
+          new Date(order.createdAt)
+        ) === today
+    );
+
+    const inProduction = orders.filter(
+      order =>
+        order.statusCode ===
+        "in_production"
+    );
+
+    const readyOrders = orders.filter(
+      order =>
+        order.statusCode === "ready"
+    );
+
+    const activeOrders = orders.filter(
+      order =>
+        order.statusCode !==
+          "cancelled" &&
+        order.statusCode !==
+          "completed"
+    );
+
+    const revenueToday =
+      payments.reduce(
+        (total, payment) => {
+          let result = total;
+
+          if (
+            payment.paid_at &&
+            localDateKey(
+              new Date(payment.paid_at)
+            ) === today
+          ) {
+            result += Number(
+              payment.amount
+            );
+          }
+
+          if (
+            payment.refunded_at &&
+            localDateKey(
+              new Date(
+                payment.refunded_at
+              )
+            ) === today
+          ) {
+            result -= Number(
+              payment.amount
+            );
+          }
+
+          return result;
+        },
+        0
+      );
+
+    const upcomingOrders = orders
+      .filter(
+        order =>
+          order.statusCode !==
+            "cancelled" &&
+          order.statusCode !==
+            "completed"
+      )
+      .sort((firstOrder, secondOrder) => {
+        const firstDate =
+          firstOrder.deliveryDateRaw
+            ? `${firstOrder.deliveryDateRaw}T${
+                firstOrder.time ===
+                "A combinar"
+                  ? "23:59"
+                  : firstOrder.time
+              }`
+            : "9999-12-31T23:59";
+
+        const secondDate =
+          secondOrder.deliveryDateRaw
+            ? `${secondOrder.deliveryDateRaw}T${
+                secondOrder.time ===
+                "A combinar"
+                  ? "23:59"
+                  : secondOrder.time
+              }`
+            : "9999-12-31T23:59";
+
+        return firstDate.localeCompare(
+          secondDate
+        );
+      })
+      .slice(0, 3);
+
+    const todayAgenda = orders
+      .filter(
+        order =>
+          order.deliveryDateRaw ===
+            today &&
+          order.statusCode !==
+            "cancelled" &&
+          order.statusCode !==
+            "completed"
+      )
+      .sort((firstOrder, secondOrder) =>
+        firstOrder.time.localeCompare(
+          secondOrder.time
+        )
+      )
+      .slice(0, 3);
+
+    const productionOrders =
+      orders.filter(order =>
+        [
+          "confirmed",
+          "in_production",
+          "ready",
+          "completed",
+        ].includes(order.statusCode)
+      );
+
+    const productionWeights: Record<
+      string,
+      number
+    > = {
+      confirmed: 25,
+      in_production: 60,
+      ready: 90,
+      completed: 100,
+    };
+
+    const productionProgress =
+      productionOrders.length > 0
+        ? Math.round(
+            productionOrders.reduce(
+              (total, order) =>
+                total +
+                (productionWeights[
+                  order.statusCode
+                ] || 0),
+              0
+            ) /
+              productionOrders.length
+          )
+        : 0;
+
+    const productionStages = [
+      {
+        name: "Confirmados",
+        count: orders.filter(
+          order =>
+            order.statusCode ===
+            "confirmed"
+        ).length,
+        progress: 25,
+      },
+      {
+        name: "Em produção",
+        count: inProduction.length,
+        progress: 60,
+      },
+      {
+        name: "Prontos",
+        count: readyOrders.length,
+        progress: 90,
+      },
+    ];
+
+    return {
+      ordersToday: ordersToday.length,
+      revenueToday,
+      inProduction:
+        inProduction.length,
+      readyOrders:
+        readyOrders.length,
+      activeOrders:
+        activeOrders.length,
+      upcomingOrders,
+      todayAgenda,
+      productionProgress,
+      productionStages,
+    };
+  }, [orders, payments]);
+
+  const nextReadyOrder =
+    summary.readyOrders > 0
+      ? orders
+          .filter(
+            order =>
+              order.statusCode ===
+              "ready"
+          )
+          .sort((firstOrder, secondOrder) =>
+            firstOrder.time.localeCompare(
+              secondOrder.time
+            )
+          )[0]
+      : null;
+
   return (
     <div className="content">
       <div className="kpis">
-        <Kpi icon="▢" label="Pedidos hoje" value="18" note="+4 desde ontem" tone="green" />
-        <Kpi icon="▥" label="Faturamento" value="R$ 3.840" note="+12,5% esta semana" tone="green" />
-        <Kpi icon="♨" label="Em produção" value="7" note="3 com prioridade" tone="gold" />
-        <Kpi icon="▭" label="Aguardando entrega" value="5" note="Próxima às 10:30" tone="gold" />
+        <Kpi
+          icon="▢"
+          label="Pedidos hoje"
+          value={String(
+            summary.ordersToday
+          )}
+          note={`${summary.activeOrders} pedido(s) ativo(s)`}
+          tone="green"
+        />
+
+        <Kpi
+          icon="▥"
+          label="Faturamento hoje"
+          value={
+            dashboardLoading
+              ? "Carregando..."
+              : money(
+                  summary.revenueToday
+                )
+          }
+          note="Pagamentos menos reembolsos"
+          tone="green"
+        />
+
+        <Kpi
+          icon="♨"
+          label="Em produção"
+          value={String(
+            summary.inProduction
+          )}
+          note="Pedidos sendo preparados"
+          tone="gold"
+        />
+
+        <Kpi
+          icon="▭"
+          label="Aguardando entrega"
+          value={String(
+            summary.readyOrders
+          )}
+          note={
+            nextReadyOrder
+              ? `Próximo: ${nextReadyOrder.time}`
+              : "Nenhum pedido pronto"
+          }
+          tone="gold"
+        />
       </div>
+
       <div className="dashboard-grid">
         <section className="panel orders-panel">
-          <PanelHead icon="▣" title="Próximos pedidos" action="Ver todos" onClick={() => setScreen("Pedidos")} />
-          <OrderTable orders={orders} />
-          <button className="quick-add" onClick={openModal}>＋ Adicionar novo pedido</button>
+          <PanelHead
+            icon="▣"
+            title="Próximos pedidos"
+            action="Ver todos"
+            onClick={() =>
+              setScreen("Pedidos")
+            }
+          />
+
+          {summary.upcomingOrders.length >
+          0 ? (
+            <OrderTable
+              orders={
+                summary.upcomingOrders
+              }
+            />
+          ) : (
+            <div className="empty-notifications">
+              <span>▢</span>
+              <p>
+                Nenhum pedido pendente.
+              </p>
+            </div>
+          )}
+
+          <button
+            className="quick-add"
+            onClick={openModal}
+          >
+            ＋ Adicionar novo pedido
+          </button>
         </section>
+
         <div className="stack">
           <section className="panel production-card">
-            <PanelHead icon="♨" title="Produção de hoje" subtitle="68% concluída" />
-            <div className="big-progress"><i style={{ width: "68%" }} /></div>
-            {[["Bolos", 80], ["Doces", 65], ["Salgados", 60]].map(([name, n]) => (
-              <div className="progress-row" key={name}><span>{name}</span><div><i style={{ width: `${n}%` }} /></div><b>{n}%</b></div>
-            ))}
+            <PanelHead
+              icon="♨"
+              title="Produção atual"
+              subtitle={`${summary.productionProgress}% concluída`}
+            />
+
+            <div className="big-progress">
+              <i
+                style={{
+                  width:
+                    `${summary.productionProgress}%`,
+                }}
+              />
+            </div>
+
+            {summary.productionStages.map(
+              stage => (
+                <div
+                  className="progress-row"
+                  key={stage.name}
+                >
+                  <span>{stage.name}</span>
+
+                  <div>
+                    <i
+                      style={{
+                        width:
+                          stage.count > 0
+                            ? `${stage.progress}%`
+                            : "0%",
+                      }}
+                    />
+                  </div>
+
+                  <b>{stage.count}</b>
+                </div>
+              )
+            )}
           </section>
+
           <section className="panel agenda">
-            <PanelHead icon="□" title="Agenda de hoje" action="Ver agenda" />
-            <div className="agenda-item"><b>10:30</b><i className="gold-dot" /><span><strong>Entrega: Ana Ribeiro</strong><small>Bolo Red Velvet</small></span></div>
-            <div className="agenda-item"><b>12:00</b><i className="pink-dot" /><span><strong>Retirada: Carlos Mendes</strong><small>Kit Festa 30 pessoas</small></span></div>
-            <div className="sales-strip"><span>⌁ &nbsp; Vendas do dia</span><strong>R$ 2.150</strong><em>+8,7%</em></div>
+            <PanelHead
+              icon="□"
+              title="Agenda de hoje"
+              action="Ver pedidos"
+              onClick={() =>
+                setScreen("Pedidos")
+              }
+            />
+
+            {summary.todayAgenda.length ===
+            0 ? (
+              <div className="empty-notifications">
+                <span>□</span>
+
+                <p>
+                  Nenhuma entrega agendada
+                  para hoje.
+                </p>
+              </div>
+            ) : (
+              summary.todayAgenda.map(
+                (order, index) => (
+                  <div
+                    className="agenda-item"
+                    key={order.databaseId}
+                  >
+                    <b>{order.time}</b>
+
+                    <i
+                      className={
+                        index % 2 === 0
+                          ? "gold-dot"
+                          : "pink-dot"
+                      }
+                    />
+
+                    <span>
+                      <strong>
+                        {order.client}
+                      </strong>
+
+                      <small>
+                        {order.item}
+                      </small>
+                    </span>
+                  </div>
+                )
+              )
+            )}
+
+            <div className="sales-strip">
+              <span>
+                ⌁ &nbsp; Vendas do dia
+              </span>
+
+              <strong>
+                {dashboardLoading
+                  ? "..."
+                  : money(
+                      summary.revenueToday
+                    )}
+              </strong>
+            </div>
           </section>
         </div>
       </div>
@@ -5941,65 +6741,158 @@ function Orders({  orders,  openModal,  onStatus,  updatingOrderId,  onResolveRe
 
 function Production({
   orders,
+  onStatus,
+  updatingOrderId,
 }: {
   orders: AppOrder[];
+
+  onStatus: (
+    databaseId: string,
+    newStatusLabel: string
+  ) => Promise<void>;
+
+  updatingOrderId: string | null;
 }) {
   const stages = [
-    "Aguardando",
-    "Confirmado",
-    "Em produção",
-    "Pronto",
+    {
+      label: "Confirmado",
+      previous: null,
+      next: "Em produção",
+      nextAction: "Iniciar produção",
+    },
+    {
+      label: "Em produção",
+      previous: "Confirmado",
+      next: "Pronto",
+      nextAction: "Marcar como pronto",
+    },
+    {
+      label: "Pronto",
+      previous: "Em produção",
+      next: "Entregue",
+      nextAction: "Marcar como entregue",
+    },
+    {
+      label: "Entregue",
+      previous: "Pronto",
+      next: null,
+      nextAction: null,
+    },
   ];
+
+  const productionOrders = orders.filter(
+    order =>
+      order.statusCode !== "cancelled" &&
+      order.statusCode !== "pending" &&
+      order.statusCode !==
+        "awaiting_payment"
+  );
 
   return (
     <div className="content">
       <div className="kanban">
         {stages.map(stage => {
-          const stageOrders = orders.filter(
-            order => order.status === stage
-          );
+          const stageOrders =
+            productionOrders.filter(
+              order =>
+                order.status ===
+                stage.label
+            );
 
           return (
             <section
               className="kanban-col"
-              key={stage}
+              key={stage.label}
             >
               <header>
-                <h3>{stage}</h3>
-                <b>{stageOrders.length}</b>
+                <h3>{stage.label}</h3>
+
+                <b>
+                  {stageOrders.length}
+                </b>
               </header>
 
-              {stageOrders.length === 0 && (
-                <div className="empty-cart">
+              {stageOrders.length === 0 ? (
+                <div className="kanban-empty">
+                  <span>♨</span>
+
                   <small>
                     Nenhum pedido nesta etapa
                   </small>
                 </div>
+              ) : (
+                stageOrders.map(order => {
+                  const isUpdating =
+                    updatingOrderId ===
+                    order.databaseId;
+
+                  return (
+                    <article
+                      className="task"
+                      key={order.databaseId}
+                    >
+                      <small>
+                        {order.id} •{" "}
+                        {order.time}
+                      </small>
+
+                      <h4>{order.item}</h4>
+
+                      <p>{order.client}</p>
+
+                      <div className="task-status-row">
+                        <Status>
+                          {order.status}
+                        </Status>
+
+                        <span className="initials">
+                          {order.initials}
+                        </span>
+                      </div>
+
+                      <div className="task-actions">
+                        {stage.previous && (
+                          <button
+                            type="button"
+                            className="task-back"
+                            disabled={isUpdating}
+                            onClick={() =>
+                              onStatus(
+                                order.databaseId,
+                                stage.previous!
+                              )
+                            }
+                            title={`Voltar para ${stage.previous}`}
+                          >
+                            ←
+                          </button>
+                        )}
+
+                        {stage.next &&
+                          stage.nextAction && (
+                            <button
+                              type="button"
+                              className="task-next"
+                              disabled={
+                                isUpdating
+                              }
+                              onClick={() =>
+                                onStatus(
+                                  order.databaseId,
+                                  stage.next!
+                                )
+                              }
+                            >
+                              {isUpdating
+                                ? "Atualizando..."
+                                : stage.nextAction}
+                            </button>
+                          )}
+                      </div>
+                    </article>
+                  );
+                })
               )}
-
-              {stageOrders.map(order => (
-                <article
-                  className="task"
-                  key={order.databaseId}
-                >
-                  <small>
-                    {order.id} • {order.time}
-                  </small>
-
-                  <h4>{order.item}</h4>
-                  <p>{order.client}</p>
-
-                  <div>
-                    <Status>
-                      {order.status}
-                    </Status>
-
-                    <span className="initials">
-                      {order.initials}
-                    </span>
-                  </div>
-                </article>
-              ))}
             </section>
           );
         })}

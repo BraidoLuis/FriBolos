@@ -466,3 +466,154 @@
     gap: 7px;
   }
 }
+
+/* Correção do painel de produção do Dashboard */
+
+.production-card {
+  min-width: 0;
+}
+
+.production-card .big-progress > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #5f9375;
+  transition: width 0.3s ease;
+}
+
+.production-card .progress-row {
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.production-card .progress-row > span {
+  min-width: 0;
+  white-space: nowrap;
+  color: #5f4134;
+  font-size: 13px;
+}
+
+.production-card .progress-row > div {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eee3d4;
+}
+
+.production-card .progress-row > div > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #5f9375;
+  transition: width 0.3s ease;
+}
+
+.production-card .progress-row > b {
+  min-width: 28px;
+  text-align: right;
+  color: #641434;
+  font-size: 13px;
+}
+
+.agenda .empty-notifications {
+  display: grid;
+  min-height: 120px;
+  place-content: center;
+  text-align: center;
+}
+
+.agenda .empty-notifications span {
+  display: block;
+  margin-bottom: 8px;
+  color: #b72e60;
+  font-size: 24px;
+}
+
+@media (max-width: 600px) {
+  .production-card .progress-row {
+    grid-template-columns: 85px minmax(0, 1fr) 24px;
+    gap: 8px;
+  }
+
+  .production-card .progress-row > span {
+    font-size: 12px;
+  }
+}
+
+.kanban-empty {
+  display: grid;
+  min-height: 130px;
+  place-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: #9a7b6b;
+  text-align: center;
+}
+
+.kanban-empty span {
+  color: #b62e60;
+  font-size: 25px;
+}
+
+.task-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.task-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid #ead8c5;
+}
+
+.task-actions button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.task-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.task-actions button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.task-back {
+  flex: 0 0 42px;
+  color: #741638;
+  background: #f4e6e8;
+}
+
+.task-next {
+  flex: 1;
+  padding: 8px 12px;
+  color: #fff;
+  background: #8b1e48;
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .kanban {
+    overflow-x: auto;
+    grid-template-columns:
+      repeat(4, minmax(270px, 1fr));
+    padding-bottom: 12px;
+  }
+}
