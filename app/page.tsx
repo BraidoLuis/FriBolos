@@ -85,6 +85,7 @@ type AppOrder = {
   value: string;
   status: string;
   statusCode: string;
+  paymentStatus: string;
   request?: string;
 
   requestType: string | null;
@@ -400,6 +401,7 @@ function mapAdminOrder(
     ),
     status: orderStatusLabel(order.status),
     statusCode: order.status,
+    paymentStatus: order.payment_status,
     request,
     requestType: order.request_type,
     requestStatus: order.request_status,
@@ -1210,113 +1212,209 @@ export default function Home() {
     }
 
     async function resolveOrderRequest(
-    order: AppOrder,
-    decision: "approved" | "rejected"
-  ) {
-    setResolvingRequestId(order.databaseId);
+      order: AppOrder,
+      decision: "approved" | "rejected"
+    ) {
+      setResolvingRequestId(order.databaseId);
 
-    try {
-      const {
-        error: resolveError,
-      } = await supabase.rpc(
-        "resolve_order_request",
-        {
-          p_order_id: order.databaseId,
-          p_decision: decision,
+      try {
+        const isPaidCancellationApproval =
+          decision === "approved" &&
+          order.requestType === "cancellation" &&
+          [
+            "paid",
+            "refund_pending",
+            "refunded",
+          ].includes(order.paymentStatus);
+
+        if (isPaidCancellationApproval) {
+          const {
+            data: refundData,
+            error: refundError,
+          } = await supabase.functions.invoke(
+            "refund-stripe-payment",
+            {
+              body: {
+                orderId: order.databaseId,
+              },
+            }
+          );
+
+          if (refundError) {
+            let errorMessage =
+              "Não foi possível solicitar o reembolso.";
+
+            try {
+              const errorContext = (
+                refundError as {
+                  context?: Response;
+                }
+              ).context;
+
+              if (errorContext) {
+                const errorBody =
+                  await errorContext.clone().json();
+
+                console.error(
+                  "Resposta da função de reembolso:",
+                  errorBody
+                );
+
+                if (errorBody?.error) {
+                  errorMessage = errorBody.error;
+                }
+              }
+            } catch (contextError) {
+              console.error(
+                "Não foi possível ler a resposta da função:",
+                contextError
+              );
+            }
+
+            console.error(
+              "Erro ao solicitar reembolso:",
+              refundError
+            );
+
+            setToast(errorMessage);
+
+            setTimeout(() => {
+              setToast("");
+            }, 2800);
+
+            return;
+          }
+
+          if (!refundData?.success) {
+            setToast(
+              refundData?.error ||
+                "Não foi possível solicitar o reembolso."
+            );
+
+            setTimeout(() => {
+              setToast("");
+            }, 2800);
+
+            return;
+          }
+        } else {
+          const {
+            error: resolveError,
+          } = await supabase.rpc(
+            "resolve_order_request",
+            {
+              p_order_id: order.databaseId,
+              p_decision: decision,
+            }
+          );
+
+          if (resolveError) {
+            console.error(
+              "Erro ao responder solicitação:",
+              resolveError
+            );
+
+            setToast(
+              "Não foi possível responder à solicitação."
+            );
+
+            setTimeout(() => {
+              setToast("");
+            }, 2800);
+
+            return;
+          }
         }
-      );
 
-      if (resolveError) {
+        setAppOrders(currentOrders =>
+          currentOrders.map(currentOrder => {
+            if (
+              currentOrder.databaseId !==
+              order.databaseId
+            ) {
+              return currentOrder;
+            }
+
+            if (decision === "rejected") {
+              return {
+                ...currentOrder,
+                request: undefined,
+                requestStatus: "rejected",
+              };
+            }
+
+            if (
+              currentOrder.requestType ===
+              "cancellation"
+            ) {
+              return {
+                ...currentOrder,
+                status: "Cancelado",
+                statusCode: "cancelled",
+
+                paymentStatus:
+                  isPaidCancellationApproval
+                    ? "refund_pending"
+                    : currentOrder.paymentStatus,
+
+                request: undefined,
+                requestStatus: "approved",
+              };
+            }
+
+            return {
+              ...currentOrder,
+
+              date: currentOrder.requestedDate
+                ? formatDeliveryDate(
+                    currentOrder.requestedDate
+                  )
+                : currentOrder.date,
+
+              time:
+                currentOrder.requestedTime?.slice(
+                  0,
+                  5
+                ) || currentOrder.time,
+
+              request: undefined,
+              requestStatus: "approved",
+            };
+          })
+        );
+
+        if (isPaidCancellationApproval) {
+          setToast(
+            "Cancelamento aprovado e reembolso solicitado!"
+          );
+        } else {
+          setToast(
+            decision === "approved"
+              ? "Solicitação aprovada!"
+              : "Solicitação rejeitada!"
+          );
+        }
+
+        setTimeout(() => {
+          setToast("");
+        }, 2800);
+      } catch (error) {
         console.error(
-          "Erro ao responder solicitação:",
-          resolveError
+          "Erro inesperado ao responder solicitação:",
+          error
         );
 
         setToast(
-          "Não foi possível responder à solicitação."
+          "Ocorreu um erro ao responder à solicitação."
         );
 
         setTimeout(() => {
           setToast("");
         }, 2800);
-
-        return;
+      } finally {
+        setResolvingRequestId(null);
       }
-
-      setAppOrders(currentOrders =>
-        currentOrders.map(currentOrder => {
-          if (
-            currentOrder.databaseId !==
-            order.databaseId
-          ) {
-            return currentOrder;
-          }
-
-          if (decision === "rejected") {
-            return {
-              ...currentOrder,
-              request: undefined,
-              requestStatus: "rejected",
-            };
-          }
-
-          if (
-            currentOrder.requestType ===
-            "cancellation"
-          ) {
-            return {
-              ...currentOrder,
-              status: "Cancelado",
-              statusCode: "cancelled",
-              request: undefined,
-              requestStatus: "approved",
-            };
-          }
-
-          return {
-            ...currentOrder,
-            date: currentOrder.requestedDate
-              ? formatDeliveryDate(
-                  currentOrder.requestedDate
-                )
-              : currentOrder.date,
-            time:
-              currentOrder.requestedTime?.slice(
-                0,
-                5
-              ) || currentOrder.time,
-            request: undefined,
-            requestStatus: "approved",
-          };
-        })
-      );
-
-      setToast(
-        decision === "approved"
-          ? "Solicitação aprovada!"
-          : "Solicitação rejeitada!"
-      );
-
-      setTimeout(() => {
-        setToast("");
-      }, 2200);
-    } catch (error) {
-      console.error(
-        "Erro inesperado ao responder solicitação:",
-        error
-      );
-
-      setToast(
-        "Ocorreu um erro ao responder à solicitação."
-      );
-
-      setTimeout(() => {
-        setToast("");
-      }, 2800);
-    } finally {
-      setResolvingRequestId(null);
     }
-  }
 
   async function handleAdminQuoteResponse(
     quote: Quote,
