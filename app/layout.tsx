@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Doce Gestão",
+  title: "FriBolos",
   description:
     "Sistema de gestão para confeitaria, pedidos, produtos e clientes.",
   icons: {

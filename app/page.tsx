@@ -1291,7 +1291,7 @@ export default function Home() {
   async function loadStoreSettings() {
       if (
         authLoading ||
-        role !== "admin"
+        !role
       ) {
         return;
       }
@@ -2373,17 +2373,31 @@ export default function Home() {
           userName={
             profile?.full_name || "Cliente"
           }
+
           products={products.filter(
             product => !product.archived
           )}
+
           quotes={quotes}
-          onQuote={handleClientQuoteResponse}
+
+          storeSettings={storeSettings}
+
+          storeSettingsLoading={
+            storeSettingsLoading
+          }
+
+          onQuote={
+            handleClientQuoteResponse
+          }
+
           unreadNotificationsCount={
             unreadNotificationsCount
           }
+
           onOpenNotifications={() =>
             setNotificationsOpen(true)
           }
+
           onLogout={handleLogout}
         />
 
@@ -3709,7 +3723,7 @@ type ClientSection =
   | "avaliacao"
   | "perfil"
   ;
-function ClientPortal({  userName,  products,  quotes,  onQuote,  unreadNotificationsCount,  onOpenNotifications,  onLogout,}: {  userName: string;  products: Product[];  quotes: Quote[];  onQuote: (    id: string,    decision: "approved" | "rejected"  ) => Promise<boolean>;  unreadNotificationsCount: number;  onOpenNotifications: () => void;  onLogout: () => void;}) {
+function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSettingsLoading,  onQuote,  unreadNotificationsCount,  onOpenNotifications,  onLogout,}: {  userName: string;  products: Product[];  quotes: Quote[];  storeSettings: StoreSettings | null;  storeSettingsLoading: boolean;  onQuote: (    id: string,    decision: "approved" | "rejected"  ) => Promise<boolean>;  unreadNotificationsCount: number;  onOpenNotifications: () => void;  onLogout: () => void;}) {
   const [section, setSection] =
   useState<ClientSection>("inicio");
   const [clientOrders, setClientOrders] =
@@ -3766,6 +3780,46 @@ function ClientPortal({  userName,  products,  quotes,  onQuote,  unreadNotifica
   const [cartToast, setCartToast] = useState("");
   const [requestOrder, setRequestOrder] = useState<string | null>(null);
   const [requestLoading, setRequestLoading,] = useState<string | null>(null);
+  const storeName =
+    storeSettings?.store_name || "FriBolos";
+
+  const storeWhatsapp =
+    storeSettings?.whatsapp || "";
+
+  const storeOpeningTime =
+    storeSettings?.opening_time
+      ? storeSettings.opening_time.slice(0, 5)
+      : "";
+
+  const storeClosingTime =
+    storeSettings?.closing_time
+      ? storeSettings.closing_time.slice(0, 5)
+      : "";
+
+  const storeBusinessDays =
+    storeSettings?.business_days || "";
+
+  const storeAcceptsOrders =
+    storeSettings?.accepts_orders ?? true;
+
+  const whatsappDigits =
+    storeWhatsapp.replace(/\D/g, "");
+
+  const whatsappNumber =
+    whatsappDigits &&
+    !whatsappDigits.startsWith("55")
+      ? `55${whatsappDigits}`
+      : whatsappDigits;
+
+  const whatsappMessage =
+    encodeURIComponent(
+      `Olá! Sou ${userName} e gostaria de falar sobre uma encomenda.`
+    );
+
+  const whatsappUrl =
+    whatsappNumber
+      ? `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`
+      : "";
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   useEffect(() => {
     const savedSection =
@@ -3804,11 +3858,52 @@ function ClientPortal({  userName,  products,  quotes,  onQuote,  unreadNotifica
       section
     );
   }, [section, sectionRestored]);
+
   function addToCart(product: Product) {
-    setCart(current => current.some(item => item.product.id === product.id) ? current.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item) : [...current, { product, quantity: 1 }]);
-    setCartToast(`${product.name} adicionado ao carrinho`);
-    setTimeout(() => setCartToast(""), 2200);
+    if (!storeAcceptsOrders) {
+      setCartToast(
+        "A confeitaria não está aceitando novos pedidos no momento."
+      );
+
+      setTimeout(() => {
+        setCartToast("");
+      }, 3000);
+
+      return;
+    }
+
+    setCart(current =>
+      current.some(
+        item =>
+          item.product.id === product.id
+      )
+        ? current.map(item =>
+            item.product.id === product.id
+              ? {
+                  ...item,
+                  quantity:
+                    item.quantity + 1,
+                }
+              : item
+          )
+        : [
+            ...current,
+            {
+              product,
+              quantity: 1,
+            },
+          ]
+    );
+
+    setCartToast(
+      `${product.name} adicionado ao carrinho`
+    );
+
+    setTimeout(() => {
+      setCartToast("");
+    }, 2200);
   }
+
   function changeQuantity(id: Product["id"], delta: number) { setCart(current => current.map(item => item.product.id === id ? { ...item, quantity: item.quantity + delta } : item).filter(item => item.quantity > 0)) }
   
   async function loadClientOrders() {
@@ -4340,6 +4435,13 @@ function ClientPortal({  userName,  products,  quotes,  onQuote,  unreadNotifica
     e: React.FormEvent<HTMLFormElement>
   ) {
     e.preventDefault();
+    if (!storeAcceptsOrders) {
+      setQuoteError(
+        "A confeitaria não está aceitando novas solicitações no momento."
+      );
+
+      return;
+    }
 
     const form = e.currentTarget;
     const data = new FormData(form);
@@ -4630,7 +4732,7 @@ function ClientPortal({  userName,  products,  quotes,  onQuote,  unreadNotifica
   return (
     <main className="client-portal">
       <header className="client-header">
-        <div className="login-brand compact"><span>♨</span><strong>Doce <em>Gestão</em></strong></div>
+        <div className="login-brand compact"><span>♨</span><strong>{storeName}</strong></div>
         <nav>
           <button className={section === "inicio" ? "active" : ""} onClick={() => setSection("inicio")}>Início</button>
           <button className={section === "catalogo" ? "active" : ""} onClick={() => setSection("catalogo")}>Catálogo</button>
@@ -4668,7 +4770,25 @@ function ClientPortal({  userName,  products,  quotes,  onQuote,  unreadNotifica
       </header>
       <section className="client-main">
         {section === "inicio" && <>
-          <div className="client-welcome"><div><p className="eyebrow">OLÁ, {getFirstName(userName).toUpperCase()}</p><h1>Seus momentos doces,<br />sempre por perto.</h1><span>Acompanhe suas encomendas e fale com a confeitaria.</span></div><button onClick={() => setSection("novo")}>＋ Fazer nova encomenda</button></div>
+          <div className="client-welcome"><div><p className="eyebrow">OLÁ, {getFirstName(userName).toUpperCase()}</p><h1>Seus momentos doces,<br />sempre por perto.</h1><span>Acompanhe suas encomendas e fale com a confeitaria.</span></div><button  type="button"  disabled={    storeSettingsLoading ||    !storeAcceptsOrders  }  onClick={() => {    if (!storeAcceptsOrders) {      return;    }    setSection("novo");  }}>  {storeSettingsLoading    ? "Carregando..."    : storeAcceptsOrders      ? "＋ Fazer nova encomenda"      : "Encomendas pausadas"}</button></div>
+          {!storeSettingsLoading &&
+            !storeAcceptsOrders && (
+              <div className="orders-paused-notice">
+                <span>◷</span>
+
+                <div>
+                  <strong>
+                    Novas encomendas estão pausadas
+                  </strong>
+
+                  <p>
+                    A confeitaria não está recebendo novos
+                    pedidos no momento. Seus pedidos já
+                    realizados continuam disponíveis.
+                  </p>
+                </div>
+              </div>
+            )}
           <div className="client-grid-main">
             <section className="panel current-order">
               {ordersLoading ? (
@@ -4756,7 +4876,7 @@ function ClientPortal({  userName,  products,  quotes,  onQuote,  unreadNotifica
                 </div>
               )}
             </section>
-            <aside className="panel contact-card"><span>♡</span><h2>Precisa de ajuda?</h2><p>Fale diretamente com a confeitaria sobre seu pedido.</p><button>Conversar no WhatsApp</button><small>Atendimento: 8h às 18h</small></aside>
+            <aside className="panel contact-card"><span>♡</span><h2>Precisa de ajuda?</h2><p>Fale diretamente com a confeitaria sobre seu pedido.</p><button  type="button"  disabled={    storeSettingsLoading ||    !whatsappUrl  }  onClick={() => {    if (!whatsappUrl) {      return;    }    window.open(      whatsappUrl,      "_blank",      "noopener,noreferrer"    );  }}>  {storeSettingsLoading    ? "Carregando contato..."    : whatsappUrl      ? "Conversar no WhatsApp"      : "WhatsApp indisponível"}</button><small>  {storeBusinessDays && (    <>      {storeBusinessDays}      <br />    </>  )}  {storeOpeningTime &&  storeClosingTime    ? `Atendimento: ${storeOpeningTime} às ${storeClosingTime}`    : "Consulte nosso horário de atendimento"}</small></aside>
           </div>
           <div className="client-stats"><article><span>▢</span><div><b>{clientOrders.length}</b><small>Pedidos realizados</small></div></article><article><span>♡</span><div><b>3 anos</b><small>Com a gente</small></div></article><article><span>☆</span><div><b>240 pontos</b><small>Clube Doce</small></div></article></div>
         </>}
