@@ -63,6 +63,14 @@ type ClientOrderRow = {
   status: string;
   payment_status: string;
   total_amount: number | string;
+  subtotal_amount: number | string;
+  delivery_fee: number | string;
+
+  fulfillment_type:
+    | "delivery"
+    | "pickup";
+
+  delivery_address: string | null;
   delivery_date: string | null;
   delivery_time: string | null;
   request_type: string | null;
@@ -93,6 +101,14 @@ type AdminOrderRow = {
   status: string;
   payment_status: string;
   total_amount: number | string;
+  subtotal_amount: number | string;
+  delivery_fee: number | string;
+
+  fulfillment_type:
+    | "delivery"
+    | "pickup";
+
+  delivery_address: string | null;
   delivery_date: string | null;
   delivery_time: string | null;
   request_type: string | null;
@@ -115,6 +131,14 @@ type AppOrder = {
   time: string;
   date: string;
   value: string;
+  subtotalAmount?: number;
+  deliveryFeeAmount?: number;
+
+  fulfillmentType?:
+    | "delivery"
+    | "pickup";
+
+  deliveryAddress?: string | null;
   status: string;
   statusCode: string;
   paymentStatus: string;
@@ -478,6 +502,17 @@ function mapAdminOrder(
     value: money(
       Number(order.total_amount)
     ),
+    subtotalAmount:
+      Number(order.subtotal_amount),
+
+    deliveryFeeAmount:
+      Number(order.delivery_fee),
+
+    fulfillmentType:
+      order.fulfillment_type,
+
+    deliveryAddress:
+      order.delivery_address,
     status: orderStatusLabel(order.status),
     statusCode: order.status,
     paymentStatus: order.payment_status,
@@ -631,6 +666,13 @@ export default function Home() {
 
   const [savingOrder, setSavingOrder] =
     useState(false);
+
+  const [
+    adminFulfillmentType,
+    setAdminFulfillmentType,
+  ] = useState<
+    "delivery" | "pickup"
+  >("pickup");
 
   const [
     storeSettings,
@@ -831,6 +873,10 @@ export default function Home() {
           status,
           payment_status,
           total_amount,
+          subtotal_amount,
+          delivery_fee,
+          fulfillment_type,
+          delivery_address,
           delivery_date,
           delivery_time,
           request_type,
@@ -1844,6 +1890,16 @@ export default function Home() {
       formData.get("status") || "confirmed"
     );
 
+    const fulfillmentType =
+      String(
+        formData.get("fulfillmentType") ||
+          "pickup"
+      ) as "delivery" | "pickup";
+
+    const deliveryAddress = String(
+      formData.get("deliveryAddress") || ""
+    ).trim();
+
     const notes = String(
       formData.get("notes") || ""
     ).trim();
@@ -1889,6 +1945,21 @@ export default function Home() {
       return;
     }
 
+    if (
+      fulfillmentType === "delivery" &&
+      deliveryAddress.length < 5
+    ) {
+      setToast(
+        "Informe o endereço para entrega."
+      );
+
+      setTimeout(() => {
+        setToast("");
+      }, 2800);
+
+      return;
+    }
+
     setSavingOrder(true);
 
     try {
@@ -1918,6 +1989,14 @@ export default function Home() {
 
           p_notes:
             notes || null,
+
+          p_fulfillment_type:
+            fulfillmentType,
+
+          p_delivery_address:
+            fulfillmentType === "delivery"
+              ? deliveryAddress
+              : null,
         }
       );
 
@@ -1942,7 +2021,18 @@ export default function Home() {
       const result = data as {
         order_id: string;
         order_number: number;
+        subtotal_amount: number;
+        delivery_fee: number;
         total_amount: number;
+
+        fulfillment_type:
+          | "delivery"
+          | "pickup";
+
+        delivery_address:
+          | string
+          | null;
+
         status: string;
       };
 
@@ -1974,6 +2064,18 @@ export default function Home() {
         value: money(
           Number(result.total_amount)
         ),
+
+        subtotalAmount:
+          Number(result.subtotal_amount),
+
+        deliveryFeeAmount:
+          Number(result.delivery_fee),
+
+        fulfillmentType:
+          result.fulfillment_type,
+
+        deliveryAddress:
+          result.delivery_address,
 
         status:
           orderStatusLabel(
@@ -2012,6 +2114,11 @@ export default function Home() {
       );
 
       form.reset();
+
+      setAdminFulfillmentType(
+        "pickup"
+      );
+
       setModal(false);
 
       setToast(
@@ -2673,9 +2780,8 @@ export default function Home() {
         <div
           className="modal-backdrop"
           onMouseDown={event => {
-            if (
-              event.currentTarget === event.target
-            ) {
+            if (event.currentTarget === event.target) {
+              setAdminFulfillmentType("pickup");
               setModal(false);
             }
           }}
@@ -2692,7 +2798,10 @@ export default function Home() {
 
               <button
                 type="button"
-                onClick={() => setModal(false)}
+                onClick={() => {
+                  setAdminFulfillmentType("pickup");
+                  setModal(false);
+                }}
               >
                 ×
               </button>
@@ -2796,6 +2905,53 @@ export default function Home() {
               </label>
 
               <label>
+                Forma de recebimento
+
+                <select
+                  required
+                  name="fulfillmentType"
+                  value={adminFulfillmentType}
+                  onChange={event =>
+                    setAdminFulfillmentType(
+                      event.target.value as
+                        | "delivery"
+                        | "pickup"
+                    )
+                  }
+                >
+                  <option value="pickup">
+                    Retirada no local
+                  </option>
+
+                  <option value="delivery">
+                    Entrega
+                    {Number(
+                      storeSettings?.delivery_fee || 0
+                    ) > 0
+                      ? ` — ${money(
+                          Number(
+                            storeSettings?.delivery_fee
+                          )
+                        )}`
+                      : ""}
+                  </option>
+                </select>
+              </label>
+
+              {adminFulfillmentType ===
+                "delivery" && (
+                <label className="wide">
+                  Endereço para entrega
+
+                  <input
+                    required
+                    name="deliveryAddress"
+                    placeholder="Rua, número, bairro e complemento"
+                  />
+                </label>
+              )}
+              
+              <label>
                 Data da entrega
 
                 <input
@@ -2827,7 +2983,10 @@ export default function Home() {
               <button
                 type="button"
                 className="secondary"
-                onClick={() => setModal(false)}
+                onClick={() => {
+                  setAdminFulfillmentType("pickup");
+                  setModal(false);
+                }}
               >
                 Cancelar
               </button>
@@ -3931,6 +4090,10 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
           status,
           payment_status,
           total_amount,
+          subtotal_amount,
+          delivery_fee,
+          fulfillment_type,
+          delivery_address,
           delivery_date,
           delivery_time,
           request_type,
@@ -4984,6 +5147,16 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
                         : ""
                     }`;
 
+                  const isDelivery =
+                    order.fulfillment_type ===
+                    "delivery";
+
+                  const orderSubtotal =
+                    Number(order.subtotal_amount);
+
+                  const orderDeliveryFee =
+                    Number(order.delivery_fee);
+
                   const hasPendingRequest =
                     order.request_status === "pending";
 
@@ -5008,7 +5181,38 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
 
                         <h3>{itemDescription}</h3>
 
-                        <p>{deliveryDescription}</p>
+                        <div className="client-order-delivery">
+                          <span className="fulfillment-badge">
+                            {isDelivery
+                              ? "▣ Entrega"
+                              : "⌂ Retirada no local"}
+                          </span>
+
+                          <p>{deliveryDescription}</p>
+
+                          {isDelivery &&
+                            order.delivery_address && (
+                              <small>
+                                {order.delivery_address}
+                              </small>
+                            )}
+                        </div>
+
+                        <div className="client-order-values">
+                          <span>
+                            Subtotal:{" "}
+                            <b>{money(orderSubtotal)}</b>
+                          </span>
+
+                          {isDelivery && (
+                            <span>
+                              Taxa de entrega:{" "}
+                              <b>
+                                {money(orderDeliveryFee)}
+                              </b>
+                            </span>
+                          )}
+                        </div>
 
                         {hasPendingRequest && (
                           <span className="request-badge">
@@ -7400,8 +7604,36 @@ function Orders({  orders,  openModal,  onStatus,  updatingOrderId,  onResolveRe
             <article key={o.id}>
               <div className="order-id"><span className="initials">{o.initials}</span><div><small>{o.id}</small><b>{o.client}</b></div></div>
               <div><small>Pedido</small><b>{o.item}</b>{o.request && <span className="request-badge">{o.request}</span>}</div>
-              <div><small>Entrega</small><b>{o.date}, {o.time}</b></div>
-              <div><small>Valor</small><b>{o.value}</b></div>
+              <div className="order-fulfillment">
+                <small>
+                  {o.fulfillmentType === "delivery"
+                    ? "Entrega"
+                    : "Retirada"}
+                </small>
+
+                <b>
+                  {o.date}, {o.time}
+                </b>
+
+                {o.fulfillmentType === "delivery" &&
+                  o.deliveryAddress && (
+                    <span>{o.deliveryAddress}</span>
+                  )}
+              </div>
+
+              <div className="order-value-breakdown">
+                <small>Valor</small>
+                <b>{o.value}</b>
+
+                {Number(o.deliveryFeeAmount || 0) > 0 && (
+                  <span>
+                    Taxa:{" "}
+                    {money(
+                      Number(o.deliveryFeeAmount)
+                    )}
+                  </span>
+                )}
+              </div>
               <select
                 value={o.status}
                 disabled={
