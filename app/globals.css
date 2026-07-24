@@ -750,3 +750,177 @@
   cursor: not-allowed;
   opacity: 0.65;
 }
+
+.latest-order-visual {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f8e5e8;
+}
+
+.latest-order-visual > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.latest-order-visual > span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 28px;
+}
+
+.fulfillment-options {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 18px;
+}
+
+.fulfillment-options button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  padding: 14px;
+  border: 1px solid #e6d4c8;
+  border-radius: 12px;
+  background: #fffaf6;
+  color: #4e192b;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.fulfillment-options button:hover {
+  border-color: #b83763;
+}
+
+.fulfillment-options button.selected {
+  border-color: #8a183f;
+  background: #fae8ee;
+  box-shadow:
+    0 0 0 2px
+    rgba(138, 24, 63, 0.1);
+}
+
+.fulfillment-options button > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f3dce4;
+  font-size: 18px;
+}
+
+.fulfillment-options button div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fulfillment-options button strong {
+  font-size: 14px;
+}
+
+.fulfillment-options button small {
+  color: #8b7168;
+  font-size: 12px;
+}
+
+.delivery-fields {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.delivery-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #39111f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.delivery-fields label.wide {
+  grid-column: 1 / -1;
+}
+
+.delivery-fields input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #e2cfc3;
+  border-radius: 10px;
+  background: #fffdfa;
+  color: #30101c;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.minimum-order-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border: 1px solid #e7bf70;
+  border-radius: 10px;
+  background: #fff7df;
+  color: #76520d;
+}
+
+.minimum-order-notice.reached {
+  border-color: #b8d8bd;
+  background: #edf7ef;
+  color: #357044;
+}
+
+.minimum-order-notice > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: currentColor;
+  color: #fff;
+  font-weight: 700;
+}
+
+.minimum-order-notice p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.payment-method-title {
+  margin-top: 4px;
+}
+
+@media (max-width: 600px) {
+  .fulfillment-options,
+  .delivery-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-fields label.wide {
+    grid-column: auto;
+  }
+}

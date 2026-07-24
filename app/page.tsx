@@ -27,6 +27,16 @@ type ProductSalesRow = {
   unit_price: number | string;
 };
 
+type CheckoutOrderOptions = {
+  fulfillmentType:
+    | "delivery"
+    | "pickup";
+
+  deliveryAddress: string;
+  deliveryDate: string;
+  deliveryTime: string;
+};
+
 type ClientOrderItemRow = {
   id: string;
   product_id: string | null;
@@ -4194,8 +4204,9 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
     };
   }, []);
 
-  async function createOrderFromCart():
-    Promise<OrderCreationResult> {
+  async function createOrderFromCart(
+    options: CheckoutOrderOptions
+  ): Promise<OrderCreationResult> {
     if (cart.length === 0) {
       return {
         success: false,
@@ -4217,9 +4228,23 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
         "create_client_order",
         {
           p_items: items,
-          p_delivery_date: null,
-          p_delivery_time: null,
+
+          p_delivery_date:
+            options.deliveryDate || null,
+
+          p_delivery_time:
+            options.deliveryTime || null,
+
           p_notes: null,
+
+          p_fulfillment_type:
+            options.fulfillmentType,
+
+          p_delivery_address:
+            options.fulfillmentType ===
+            "delivery"
+              ? options.deliveryAddress
+              : null,
         }
       );
 
@@ -4283,6 +4308,16 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
 
   const latestOrder =
   clientOrders[0] || null;
+
+  const latestOrderProductImage =
+    latestOrder?.order_items
+      .flatMap(
+        item => item.products || []
+      )
+      .find(
+        product => product.image_url
+      )
+      ?.image_url || "";
 
   const latestOrderDescription =
     latestOrder
@@ -4800,7 +4835,19 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
                 <>
                   <div className="client-panel-title">
                     <div>
-                      <span>🍰</span>
+                      <span className="latest-order-visual">
+                        {latestOrderProductImage ? (
+                          <img
+                            src={latestOrderProductImage}
+                            alt={
+                              latestOrderDescription ||
+                              "Produto do último pedido"
+                            }
+                          />
+                        ) : (
+                          <span>🍰</span>
+                        )}
+                      </span>
 
                       <div>
                         <small>ÚLTIMO PEDIDO</small>
@@ -5245,12 +5292,43 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
         {section === "pagamento" && (
           <Payment
             paid={paid}
-            cart={paid ? purchasedItems : cart}
+
+            cart={
+              paid
+                ? purchasedItems
+                : cart
+            }
+
             onPay={createOrderFromCart}
-            returning={paymentReturnLoading}
-            returnError={paymentReturnError}
+
+            returning={
+              paymentReturnLoading
+            }
+
+            returnError={
+              paymentReturnError
+            }
+
             confirmedOrderNumber={
               confirmedPaymentOrderNumber
+            }
+
+            minimumOrderValue={
+              Number(
+                storeSettings
+                  ?.minimum_order_value || 0
+              )
+            }
+
+            deliveryFee={
+              Number(
+                storeSettings
+                  ?.delivery_fee || 0
+              )
+            }
+
+            acceptsOrders={
+              storeAcceptsOrders
             }
           />
         )}
@@ -5434,14 +5512,48 @@ function Payment({
   returning,
   returnError,
   confirmedOrderNumber,
+  minimumOrderValue,
+  deliveryFee,
+  acceptsOrders,
 }: {
   paid: boolean;
   cart: CartItem[];
-  onPay: () => Promise<OrderCreationResult>;
+
+  onPay: (
+    options: CheckoutOrderOptions
+  ) => Promise<OrderCreationResult>;
+
   returning: boolean;
   returnError: string;
   confirmedOrderNumber: number | null;
+
+  minimumOrderValue: number;
+  deliveryFee: number;
+  acceptsOrders: boolean;
 }) {
+
+
+  const [
+    fulfillmentType,
+    setFulfillmentType,
+  ] = useState<
+    "delivery" | "pickup"
+  >("pickup");
+
+  const [
+    deliveryAddress,
+    setDeliveryAddress,
+  ] = useState("");
+
+  const [
+    deliveryDate,
+    setDeliveryDate,
+  ] = useState("");
+
+  const [
+    deliveryTime,
+    setDeliveryTime,
+  ] = useState("");
 
   const [
     pendingOrder,
@@ -5474,20 +5586,75 @@ function Payment({
   });
 
   const [processing, setProcessing] =
-  useState(false);
+    useState(false);
 
   const [paymentError, setPaymentError] =
     useState("");
 
+  const subtotal = cart.reduce(
+    (sum, item) =>
+      sum +
+      priceNumber(item.product.price) *
+        item.quantity,
+    0
+  );
+
+  const appliedDeliveryFee =
+    fulfillmentType === "delivery"
+      ? deliveryFee
+      : 0;
+
+  const checkoutTotal =
+    subtotal + appliedDeliveryFee;
+
 async function confirmOrder() {
   setPaymentError("");
+
+  if (!acceptsOrders) {
+    setPaymentError(
+      "A confeitaria não está aceitando novos pedidos no momento."
+    );
+
+    return;
+  }
+
+  if (
+    minimumOrderValue > 0 &&
+    subtotal < minimumOrderValue
+  ) {
+    setPaymentError(
+      `O pedido mínimo é de ${money(
+        minimumOrderValue
+      )}.`
+    );
+
+    return;
+  }
+
+  if (
+    fulfillmentType === "delivery" &&
+    deliveryAddress.trim().length < 5
+  ) {
+    setPaymentError(
+      "Informe o endereço para entrega."
+    );
+
+    return;
+  }
+
   setProcessing(true);
 
   try {
     let order = pendingOrder;
 
     if (!order) {
-      const result = await onPay();
+      const result = await onPay({
+        fulfillmentType,
+        deliveryAddress:
+          deliveryAddress.trim(),
+        deliveryDate,
+        deliveryTime,
+      });
 
       if (!result.success) {
         setPaymentError(result.message);
@@ -5632,7 +5799,7 @@ async function confirmOrder() {
       </div>
     );
   }
-  const total = checkoutItems.reduce((sum, item) => sum + priceNumber(item.product.price) * item.quantity, 0);
+
   if (paid) {
     return (
       <div className="success-state">
@@ -5683,7 +5850,131 @@ async function confirmOrder() {
       <div className="client-page-title"><p className="eyebrow">PAGAMENTO</p><h1>Finalize sua encomenda</h1><span>Revise todos os itens e escolha a forma de pagamento.</span></div>
       <div className="payment-layout">
         <section className="panel payment-card">
-          <h2>Forma de pagamento</h2>
+          <h2>Forma de recebimento</h2>
+
+          <div className="fulfillment-options">
+            <button
+              type="button"
+              className={
+                fulfillmentType === "pickup"
+                  ? "selected"
+                  : ""
+              }
+              onClick={() => {
+                setFulfillmentType("pickup");
+                setPaymentError("");
+              }}
+            >
+              <span>⌂</span>
+
+              <div>
+                <strong>Retirada no local</strong>
+                <small>Sem taxa de entrega</small>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className={
+                fulfillmentType === "delivery"
+                  ? "selected"
+                  : ""
+              }
+              onClick={() => {
+                setFulfillmentType("delivery");
+                setPaymentError("");
+              }}
+            >
+              <span>▣</span>
+
+              <div>
+                <strong>Receber em casa</strong>
+
+                <small>
+                  Taxa de {money(deliveryFee)}
+                </small>
+              </div>
+            </button>
+          </div>
+
+          <div className="delivery-fields">
+            {fulfillmentType === "delivery" && (
+              <label className="wide">
+                Endereço para entrega
+
+                <input
+                  required
+                  value={deliveryAddress}
+                  onChange={event =>
+                    setDeliveryAddress(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Rua, número, bairro e complemento"
+                />
+              </label>
+            )}
+
+            <label>
+              Data desejada
+
+              <input
+                type="date"
+                value={deliveryDate}
+                onChange={event =>
+                  setDeliveryDate(
+                    event.target.value
+                  )
+                }
+              />
+            </label>
+
+            <label>
+              Horário preferido
+
+              <input
+                type="time"
+                value={deliveryTime}
+                onChange={event =>
+                  setDeliveryTime(
+                    event.target.value
+                  )
+                }
+              />
+            </label>
+          </div>
+
+          {minimumOrderValue > 0 && (
+            <div
+              className={`minimum-order-notice ${
+                subtotal >= minimumOrderValue
+                  ? "reached"
+                  : ""
+              }`}
+            >
+              <span>
+                {subtotal >= minimumOrderValue
+                  ? "✓"
+                  : "!"}
+              </span>
+
+              <p>
+                {subtotal >= minimumOrderValue
+                  ? "O valor mínimo do pedido foi atingido."
+                  : `O pedido mínimo é de ${money(
+                      minimumOrderValue
+                    )}. Faltam ${money(
+                      minimumOrderValue -
+                        subtotal
+                    )}.`}
+              </p>
+            </div>
+          )}
+
+          <h2 className="payment-method-title">
+            Forma de pagamento
+          </h2>
+
           <div className="stripe-checkout-note">
             <span>⌑</span>
 
@@ -5699,13 +5990,16 @@ async function confirmOrder() {
             </div>
           </div>
           <button
+            type="button"
             className="confirm-payment"
             disabled={processing}
             onClick={confirmOrder}
           >
             {processing
               ? "Abrindo pagamento seguro..."
-              : `Pagar ${money(total)} com Stripe`}
+              : `Pagar ${money(
+                checkoutTotal
+              )} com Stripe`}
           </button>
           {(paymentError || returnError) && (
             <p className="form-error">
@@ -5719,9 +6013,31 @@ async function confirmOrder() {
         <aside className="panel order-summary">
           <h2>Resumo do pedido</h2>
           {checkoutItems.map(item => <div key={item.product.id}><span>{item.quantity}× {item.product.name}</span><b>{money(priceNumber(item.product.price) * item.quantity)}</b></div>)}
-          <div><span>Entrega</span><b>A combinar</b></div>
+          <div>
+            <span>Subtotal</span>
+            <b>{money(subtotal)}</b>
+          </div>
+
+          <div>
+            <span>
+              {fulfillmentType === "delivery"
+                ? "Taxa de entrega"
+                : "Retirada no local"}
+            </span>
+
+            <b>
+              {fulfillmentType === "delivery"
+                ? money(appliedDeliveryFee)
+                : "Grátis"}
+            </b>
+          </div>
+
           <hr />
-          <div className="total"><span>Total</span><b>{money(total)}</b></div>
+
+          <div className="total">
+            <span>Total</span>
+            <b>{money(checkoutTotal)}</b>
+          </div>
           <small>Prazo confirmado após o pedido.</small>
         </aside>
       </div>
