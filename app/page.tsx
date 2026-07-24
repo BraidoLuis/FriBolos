@@ -37,6 +37,11 @@ type CheckoutOrderOptions = {
   deliveryTime: string;
 };
 
+type OrderFilter =
+  | "all"
+  | "today"
+  | "requests";
+
 type ClientOrderItemRow = {
   id: string;
   product_id: string | null;
@@ -211,6 +216,7 @@ type StoreSettings = {
   opening_time: string | null;
   closing_time: string | null;
   business_days: string | null;
+  business_weekdays: number[];
 
   minimum_order_value: number;
   delivery_fee: number;
@@ -301,7 +307,30 @@ type AppReview = {
   createdAt: string;
 };
 
+const weekdayOptions = [
+  { value: 0, label: "Dom" },
+  { value: 1, label: "Seg" },
+  { value: 2, label: "Ter" },
+  { value: 3, label: "Qua" },
+  { value: 4, label: "Qui" },
+  { value: 5, label: "Sex" },
+  { value: 6, label: "Sáb" },
+];
+
 function priceNumber(price: string) { return Number(price.replace(/[^\d,]/g, "").replace(",", ".")) || 0 }
+
+function normalizeSearch(
+  value: string
+) {
+  return value
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .toLowerCase()
+    .trim();
+}
 
 function databasePrice(value: string) {
   const sanitized = value
@@ -1374,6 +1403,7 @@ export default function Home() {
           opening_time,
           closing_time,
           business_days,
+          business_weekdays,
           minimum_order_value,
           delivery_fee,
           accepts_orders,
@@ -1421,15 +1451,44 @@ export default function Home() {
     };
   }, [authLoading, role]);
 
-  const filteredOrders = useMemo(
-    () =>
-      appOrders.filter(order =>
-        `${order.client} ${order.item} ${order.id}`
-          .toLowerCase() 
-          .includes(query.toLowerCase())
-      ),
-    [query, appOrders]
-  );
+  const filteredOrders = useMemo(() => {
+    const normalizedQuery =
+      normalizeSearch(query);
+
+    if (!normalizedQuery) {
+      return appOrders;
+    }
+
+    return appOrders.filter(order => {
+      const fulfillmentLabel =
+        order.fulfillmentType ===
+        "delivery"
+          ? "Entrega"
+          : order.fulfillmentType ===
+              "pickup"
+            ? "Retirada"
+            : "";
+
+      const searchableContent = [
+        order.id,
+        order.client,
+        order.item,
+        order.status,
+        order.statusCode,
+        order.paymentStatus,
+        order.date,
+        order.time,
+        order.deliveryDateRaw || "",
+        fulfillmentLabel,
+        order.deliveryAddress || "",
+        order.request || "",
+      ].join(" ");
+
+      return normalizeSearch(
+        searchableContent
+      ).includes(normalizedQuery);
+    });
+  }, [query, appOrders]);
 
   async function handleOrderStatusChange(
       databaseId: string,
@@ -2154,6 +2213,40 @@ export default function Home() {
     const form = e.currentTarget;
     const formData = new FormData(form);
 
+    const businessWeekdays = formData
+      .getAll("businessWeekdays")
+      .map(value => Number(value))
+      .filter(
+        value =>
+          Number.isInteger(value) &&
+          value >= 0 &&
+          value <= 6
+      );
+
+    if (businessWeekdays.length === 0) {
+      setToast(
+        "Selecione pelo menos um dia de funcionamento."
+      );
+
+      setTimeout(() => {
+        setToast("");
+      }, 2800);
+
+      return;
+    }
+
+    const selectedDayLabels =
+      businessWeekdays.map(day => {
+        const option = weekdayOptions.find(
+          item => item.value === day
+        );
+
+        return option?.label || "";
+      });
+
+    const businessDaysLabel =
+      selectedDayLabels.join(", ");
+
     const minimumOrderValue = Number(
       String(
         formData.get("minimumOrderValue") || "0"
@@ -2234,10 +2327,8 @@ export default function Home() {
               formData.get("closingTime") || ""
             ) || null,
 
-          business_days:
-            String(
-              formData.get("businessDays") || ""
-            ).trim() || null,
+          business_days: businessDaysLabel,
+          business_weekdays: businessWeekdays,
 
           minimum_order_value:
             Number.isFinite(minimumOrderValue)
@@ -5534,6 +5625,24 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
             acceptsOrders={
               storeAcceptsOrders
             }
+
+            storeAddress={storeSettings?.address || ""}
+
+            storeCity={storeSettings?.city || ""}
+
+            storeState={storeSettings?.state || ""}
+
+            storeZipCode={storeSettings?.zip_code || ""}
+
+            openingTime={storeSettings?.opening_time || ""}
+
+            closingTime={storeSettings?.closing_time || ""}
+
+            businessDays={storeSettings?.business_days || ""}
+
+            businessWeekdays={
+              storeSettings?.business_weekdays || []
+            }
           />
         )}
         {section === "avaliacao" && (
@@ -5719,6 +5828,14 @@ function Payment({
   minimumOrderValue,
   deliveryFee,
   acceptsOrders,
+  storeAddress,
+  storeCity,
+  storeState,
+  storeZipCode,
+  openingTime,
+  closingTime,
+  businessDays,
+  businessWeekdays,
 }: {
   paid: boolean;
   cart: CartItem[];
@@ -5734,6 +5851,14 @@ function Payment({
   minimumOrderValue: number;
   deliveryFee: number;
   acceptsOrders: boolean;
+  storeAddress: string;
+  storeCity: string;
+  storeState: string;
+  storeZipCode: string;
+  openingTime: string;
+  closingTime: string;
+  businessDays: string;
+  businessWeekdays: number[];
 }) {
 
 
@@ -5811,6 +5936,48 @@ function Payment({
   const checkoutTotal =
     subtotal + appliedDeliveryFee;
 
+  const pickupAddress = [
+    storeAddress,
+    [storeCity, storeState]
+      .filter(Boolean)
+      .join(" - "),
+    storeZipCode
+      ? `CEP ${storeZipCode}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" • ");
+
+  const formattedOpeningTime =
+    openingTime
+      ? openingTime.slice(0, 5)
+      : "";
+
+  const formattedClosingTime =
+    closingTime
+      ? closingTime.slice(0, 5)
+      : "";
+
+  const storeHours =
+    formattedOpeningTime &&
+    formattedClosingTime
+      ? `${formattedOpeningTime} às ${formattedClosingTime}`
+      : "Horário a confirmar";
+
+  const today = new Date();
+
+  const minimumDate = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(
+      2,
+      "0"
+    ),
+    String(today.getDate()).padStart(
+      2,
+      "0"
+    ),
+  ].join("-");
+
 async function confirmOrder() {
   setPaymentError("");
 
@@ -5841,6 +6008,75 @@ async function confirmOrder() {
   ) {
     setPaymentError(
       "Informe o endereço para entrega."
+    );
+
+    return;
+  }
+
+  if (!deliveryDate) {
+    setPaymentError(
+      "Selecione a data desejada."
+    );
+
+    return;
+  }
+
+  if (deliveryDate < minimumDate) {
+    setPaymentError(
+      "A data do pedido não pode estar no passado."
+    );
+
+    return;
+  }
+
+  const selectedDate = new Date(
+    `${deliveryDate}T12:00:00`
+  );
+
+  const selectedWeekday =
+    selectedDate.getDay();
+
+  if (
+    businessWeekdays.length > 0 &&
+    !businessWeekdays.includes(
+      selectedWeekday
+    )
+  ) {
+    setPaymentError(
+      "A confeitaria não funciona na data selecionada."
+    );
+
+    return;
+  }
+
+  if (!deliveryTime) {
+    setPaymentError(
+      "Selecione o horário preferido."
+    );
+
+    return;
+  }
+
+  const selectedTime =
+    deliveryTime.slice(0, 5);
+
+  if (
+    formattedOpeningTime &&
+    selectedTime < formattedOpeningTime
+  ) {
+    setPaymentError(
+      `Selecione um horário a partir das ${formattedOpeningTime}.`
+    );
+
+    return;
+  }
+
+  if (
+    formattedClosingTime &&
+    selectedTime > formattedClosingTime
+  ) {
+    setPaymentError(
+      `Selecione um horário até as ${formattedClosingTime}.`
     );
 
     return;
@@ -6101,6 +6337,28 @@ async function confirmOrder() {
             </button>
           </div>
 
+          {fulfillmentType === "pickup" && (
+            <div className="pickup-information">
+              <span>⌂</span>
+
+              <div>
+                <strong>Retirada na confeitaria</strong>
+
+                <p>
+                  {pickupAddress ||
+                    "Endereço de retirada a confirmar"}
+                </p>
+
+                <small>
+                  {businessDays ||
+                    "Dias de funcionamento a confirmar"}
+                  {" • "}
+                  {storeHours}
+                </small>
+              </div>
+            </div>
+          )}
+
           <div className="delivery-fields">
             {fulfillmentType === "delivery" && (
               <label className="wide">
@@ -6123,13 +6381,17 @@ async function confirmOrder() {
               Data desejada
 
               <input
+                required
                 type="date"
+                min={minimumDate}
                 value={deliveryDate}
-                onChange={event =>
+                onChange={event => {
                   setDeliveryDate(
                     event.target.value
-                  )
-                }
+                  );
+
+                  setPaymentError("");
+                }}
               />
             </label>
 
@@ -6137,13 +6399,24 @@ async function confirmOrder() {
               Horário preferido
 
               <input
+                required
                 type="time"
+                min={
+                  formattedOpeningTime ||
+                  undefined
+                }
+                max={
+                  formattedClosingTime ||
+                  undefined
+                }
                 value={deliveryTime}
-                onChange={event =>
+                onChange={event => {
                   setDeliveryTime(
                     event.target.value
-                  )
-                }
+                  );
+
+                  setPaymentError("");
+                }}
               />
             </label>
           </div>
@@ -7591,16 +7864,116 @@ function OrderTable({ orders }: { orders: any[] }) {
 }
 
 function Orders({  orders,  openModal,  onStatus,  updatingOrderId,  onResolveRequest,  resolvingRequestId,}: {  orders: AppOrder[];  openModal: () => void;  onStatus: (    databaseId: string,    status: string  ) => Promise<void>;  updatingOrderId: string | null;  onResolveRequest: (    order: AppOrder,    decision: "approved" | "rejected"  ) => Promise<void>;  resolvingRequestId: string | null;}) {
+  const [
+    activeFilter,
+    setActiveFilter,
+  ] = useState<OrderFilter>("all");
+
+  const currentDate = new Date();
+
+  const todayDate = [
+    currentDate.getFullYear(),
+    String(
+      currentDate.getMonth() + 1
+    ).padStart(2, "0"),
+    String(
+      currentDate.getDate()
+    ).padStart(2, "0"),
+  ].join("-");
+
+  const visibleOrders = useMemo(() => {
+    if (activeFilter === "today") {
+      return orders.filter(
+        order =>
+          order.deliveryDateRaw ===
+          todayDate
+      );
+    }
+
+    if (activeFilter === "requests") {
+      return orders.filter(
+        order =>
+          order.requestStatus ===
+          "pending"
+      );
+    }
+
+    return orders;
+  }, [
+    orders,
+    activeFilter,
+    todayDate,
+  ]);
+
   return (
     <div className="content">
       <div className="page-actions">
-        <div className="tabs"><button className="selected">Todos</button><button>Hoje</button><button>Solicitações</button></div>
+        <div className="tabs">
+          <button
+            type="button"
+            className={
+              activeFilter === "all"
+                ? "selected"
+                : ""
+            }
+            onClick={() =>
+              setActiveFilter("all")
+            }
+          >
+            Todos
+          </button>
+
+          <button
+            type="button"
+            className={
+              activeFilter === "today"
+                ? "selected"
+                : ""
+            }
+            onClick={() =>
+              setActiveFilter("today")
+            }
+          >
+            Hoje
+          </button>
+
+          <button
+            type="button"
+            className={
+              activeFilter === "requests"
+                ? "selected"
+                : ""
+            }
+            onClick={() =>
+              setActiveFilter("requests")
+            }
+          >
+            Solicitações
+          </button>
+        </div>
         <button className="new-order" onClick={openModal}>＋ Novo pedido</button>
       </div>
       <section className="panel full-table">
-        <PanelHead icon="▣" title="Acompanhar pedidos" subtitle={`${orders.length} pedidos encontrados`} />
+        <PanelHead icon="▣" title="Acompanhar pedidos" subtitle={`${visibleOrders.length} pedidos encontrados`} />
         <div className="admin-orders-list">
-          {orders.map(o => (
+          {visibleOrders.length === 0 && (
+            <div className="empty-cart">
+              <span>▣</span>
+
+              <h3>
+                Nenhum pedido encontrado
+              </h3>
+
+              <p>
+                {activeFilter === "today"
+                  ? "Não existem entregas ou retiradas para hoje."
+                  : activeFilter === "requests"
+                    ? "Não existem solicitações pendentes."
+                    : "Nenhum pedido foi cadastrado."}
+              </p>
+            </div>
+          )}
+          {visibleOrders.map(o => (
             <article key={o.id}>
               <div className="order-id"><span className="initials">{o.initials}</span><div><small>{o.id}</small><b>{o.client}</b></div></div>
               <div><small>Pedido</small><b>{o.item}</b>{o.request && <span className="request-badge">{o.request}</span>}</div>
@@ -10466,17 +10839,33 @@ function Settings({
             />
           </label>
 
-          <label className="wide">
-            Dias de funcionamento
+          <div className="wide settings-weekdays">
+            <strong>Dias de funcionamento</strong>
 
-            <input
-              name="businessDays"
-              defaultValue={
-                settings.business_days || ""
-              }
-              placeholder="Ex.: Segunda a sábado"
-            />
-          </label>
+            <div>
+              {weekdayOptions.map(day => (
+                <label key={day.value}>
+                  <input
+                    type="checkbox"
+                    name="businessWeekdays"
+                    value={day.value}
+                    defaultChecked={
+                    (settings.business_weekdays || []).includes(
+                      day.value
+                    )
+                    }
+                  />
+
+                  <span>{day.label}</span>
+                </label>
+              ))}
+            </div>
+
+            <small>
+              Selecione os dias em que a confeitaria
+              recebe pedidos.
+            </small>
+          </div>
 
           <label>
             Pedido mínimo

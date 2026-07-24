@@ -998,3 +998,95 @@
     gap: 4px;
   }
 }
+
+.pickup-information {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid #ead8ca;
+  border-radius: 12px;
+  background: #fbf6ef;
+}
+
+.pickup-information > span {
+  display: grid;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f5e2e7;
+  color: #7b1539;
+  font-size: 18px;
+}
+
+.pickup-information div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pickup-information strong {
+  color: #65112f;
+}
+
+.pickup-information p,
+.pickup-information small {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.pickup-information small {
+  color: #806c62;
+}
+
+.settings-weekdays {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-weekdays > div {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(54px, 1fr));
+  gap: 8px;
+}
+
+.settings-weekdays label {
+  cursor: pointer;
+}
+
+.settings-weekdays label input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.settings-weekdays label span {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  border: 1px solid #dfc9bb;
+  border-radius: 10px;
+  background: #fffaf5;
+  color: #6b1836;
+  transition: 0.2s;
+}
+
+.settings-weekdays label input:checked + span {
+  border-color: #a91f50;
+  background: #a91f50;
+  color: #fff;
+}
+
+.settings-weekdays small {
+  color: #806c62;
+}
+
+@media (max-width: 700px) {
+  .settings-weekdays > div {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
