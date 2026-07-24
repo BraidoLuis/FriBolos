@@ -7,6 +7,26 @@ type Screen = "Visão geral" | "Pedidos" | "Orçamentos" | "Produção" | "Card�
 
 type Role = "admin" | "client";
 
+type FinancePaymentRow = {
+  id: string;
+  amount: number | string;
+  status: string;
+  paid_at: string | null;
+  refunded_at: string | null;
+  created_at: string;
+
+  orders: {
+    order_number: number;
+  } | null;
+};
+
+type ProductSalesRow = {
+  order_id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number | string;
+};
+
 type ClientOrderItemRow = {
   id: string;
   product_id: string | null;
@@ -68,6 +88,7 @@ type AdminOrderRow = {
   request_type: string | null;
   request_status: string | null;
   requested_delivery_date: string | null;
+  user_id: string;
   requested_delivery_time: string | null;
   request_reason: string | null;
   created_at: string;
@@ -76,6 +97,7 @@ type AdminOrderRow = {
 
 type AppOrder = {
   databaseId: string;
+  userId: string;
   id: string;
   client: string;
   initials: string;
@@ -160,6 +182,13 @@ type QuoteRow = {
   admin_message: string | null;
   reference_image_url: string | null;
   status: string;
+  created_at: string;
+};
+
+type ClientProfileRow = {
+  id: string;
+  full_name: string;
+  phone: string | null;
   created_at: string;
 };
 
@@ -377,6 +406,7 @@ function mapAdminOrder(
 
   return {
     databaseId: order.id,
+    userId: order.user_id,
     id: `#${order.order_number}`,
     client: order.customer_name,
     initials: getInitials(
@@ -719,6 +749,7 @@ export default function Home() {
         .from("orders")
         .select(`
           id,
+          user_id,
           order_number,
           customer_name,
           customer_phone,
@@ -7177,40 +7208,142 @@ function Clients({
 }: {
   orders: AppOrder[];
 }) {
-  const clientMap = new Map<
-    string,
-    {
-      name: string;
-      initials: string;
-      orders: number;
-      spent: number;
+  const [profiles, setProfiles] =
+    useState<ClientProfileRow[]>([]);
+
+  const [clientsLoading, setClientsLoading] =
+    useState(true);
+
+  const [clientsError, setClientsError] =
+    useState("");
+
+  useEffect(() => {
+    let componentActive = true;
+
+    async function loadClients() {
+      setClientsLoading(true);
+      setClientsError("");
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          full_name,
+          phone,
+          created_at
+        `)
+        .eq("role", "client")
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (!componentActive) {
+        return;
+      }
+
+      if (error) {
+        console.error(
+          "Erro ao carregar clientes:",
+          error
+        );
+
+        setClientsError(
+          "Não foi possível carregar os clientes."
+        );
+
+        setClientsLoading(false);
+        return;
+      }
+
+      setProfiles(
+        (data || []) as ClientProfileRow[]
+      );
+
+      setClientsLoading(false);
     }
-  >();
 
-  orders.forEach(order => {
-    const existingClient =
-      clientMap.get(order.client);
+    loadClients();
 
-    const orderValue =
-      databasePrice(order.value);
+    return () => {
+      componentActive = false;
+    };
+  }, []);
 
-    if (existingClient) {
-      existingClient.orders += 1;
-      existingClient.spent += orderValue;
-      return;
-    }
+  const clientList = useMemo(
+    () =>
+      profiles.map(profile => {
+        const clientOrders = orders.filter(
+          order =>
+            order.userId === profile.id
+        );
 
-    clientMap.set(order.client, {
-      name: order.client,
-      initials: order.initials,
-      orders: 1,
-      spent: orderValue,
-    });
-  });
+        const validOrders =
+          clientOrders.filter(
+            order =>
+              order.statusCode !==
+              "cancelled"
+          );
 
-  const clientList = Array.from(
-    clientMap.values()
+        const paidOrders =
+          clientOrders.filter(
+            order =>
+              order.paymentStatus === "paid"
+          );
+
+        const totalSpent =
+          paidOrders.reduce(
+            (total, order) =>
+              total +
+              databasePrice(order.value),
+            0
+          );
+
+        return {
+          id: profile.id,
+          name: profile.full_name,
+          initials: getInitials(
+            profile.full_name
+          ),
+          phone:
+            profile.phone ||
+            "Telefone não informado",
+          orders: validOrders.length,
+          totalSpent,
+          registeredAt:
+            new Date(
+              profile.created_at
+            ).toLocaleDateString(
+              "pt-BR"
+            ),
+        };
+      }),
+    [profiles, orders]
   );
+
+  if (clientsLoading) {
+    return (
+      <div className="content">
+        <section className="panel">
+          <p>Carregando clientes...</p>
+        </section>
+      </div>
+    );
+  }
+
+  if (clientsError) {
+    return (
+      <div className="content">
+        <section className="panel">
+          <p className="form-error">
+            {clientsError}
+          </p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="content">
@@ -7218,16 +7351,20 @@ function Clients({
         <PanelHead
           icon="♙"
           title="Clientes"
-          subtitle="Sua base de clientes"
+          subtitle={`${clientList.length} cliente(s) cadastrado(s)`}
         />
 
         {clientList.length === 0 ? (
           <div className="empty-cart">
             <span>♙</span>
-            <h3>Nenhum cliente encontrado</h3>
+
+            <h3>
+              Nenhum cliente encontrado
+            </h3>
+
             <p>
-              Os clientes aparecerão depois que
-              realizarem pedidos.
+              Os clientes aparecerão depois
+              que criarem uma conta.
             </p>
           </div>
         ) : (
@@ -7235,7 +7372,7 @@ function Clients({
             {clientList.map(client => (
               <article
                 className="client"
-                key={client.name}
+                key={client.id}
               >
                 <span className="initials large">
                   {client.initials}
@@ -7243,19 +7380,28 @@ function Clients({
 
                 <div>
                   <h3>{client.name}</h3>
-                  <p>Cliente cadastrado</p>
+
+                  <p>{client.phone}</p>
+
+                  <small>
+                    Cadastro em{" "}
+                    {client.registeredAt}
+                  </small>
                 </div>
 
                 <dl>
                   <div>
-                    <dt>Pedidos</dt>
+                    <dt>Pedidos ativos</dt>
                     <dd>{client.orders}</dd>
                   </div>
 
                   <div>
-                    <dt>Total gasto</dt>
+                    <dt>Total pago</dt>
+
                     <dd>
-                      {money(client.spent)}
+                      {money(
+                        client.totalSpent
+                      )}
                     </dd>
                   </div>
                 </dl>
@@ -7269,20 +7415,471 @@ function Clients({
 }
 
 function Finance() {
+  const [payments, setPayments] =
+    useState<FinancePaymentRow[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [financeError, setFinanceError] =
+    useState("");
+
+  useEffect(() => {
+    let componentActive = true;
+
+    async function loadFinance() {
+      setLoading(true);
+      setFinanceError("");
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("payments")
+        .select(`
+          id,
+          amount,
+          status,
+          paid_at,
+          refunded_at,
+          created_at,
+          orders (
+            order_number
+          )
+        `)
+        .order("created_at", {
+          ascending: true,
+        });
+
+      if (!componentActive) {
+        return;
+      }
+
+      if (error) {
+        console.error(
+          "Erro ao carregar financeiro:",
+          error
+        );
+
+        setFinanceError(
+          "Não foi possível carregar os dados financeiros."
+        );
+
+        setLoading(false);
+        return;
+      }
+
+      setPayments(
+        (data || []) as unknown as FinancePaymentRow[]
+      );
+
+      setLoading(false);
+    }
+
+    loadFinance();
+
+    return () => {
+      componentActive = false;
+    };
+  }, []);
+
+  const financeSummary = useMemo(() => {
+    const now = new Date();
+
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const monthlyPayments =
+      payments.filter(payment => {
+        if (!payment.paid_at) {
+          return false;
+        }
+
+        const paidDate =
+          new Date(payment.paid_at);
+
+        return (
+          paidDate.getMonth() ===
+            currentMonth &&
+          paidDate.getFullYear() ===
+            currentYear
+        );
+      });
+
+    const grossRevenue =
+      monthlyPayments.reduce(
+        (total, payment) =>
+          total + Number(payment.amount),
+        0
+      );
+
+    const monthlyRefunds =
+      payments.filter(payment => {
+        if (
+          payment.status !== "refunded" ||
+          !payment.refunded_at
+        ) {
+          return false;
+        }
+
+        const refundedDate =
+          new Date(payment.refunded_at);
+
+        return (
+          refundedDate.getMonth() ===
+            currentMonth &&
+          refundedDate.getFullYear() ===
+            currentYear
+        );
+      });
+
+    const refundedAmount =
+      monthlyRefunds.reduce(
+        (total, payment) =>
+          total + Number(payment.amount),
+        0
+      );
+
+    const netRevenue =
+      grossRevenue - refundedAmount;
+
+    const months = Array.from(
+      {
+        length: 7,
+      },
+      (_, index) => {
+        const date = new Date(
+          currentYear,
+          currentMonth - 6 + index,
+          1
+        );
+
+        return {
+          year: date.getFullYear(),
+          month: date.getMonth(),
+
+          label: date.toLocaleDateString(
+            "pt-BR",
+            {
+              month: "short",
+            }
+          )
+            .replace(".", "")
+            .replace(
+              /^./,
+              letter =>
+                letter.toUpperCase()
+            ),
+
+          total: 0,
+        };
+      }
+    );
+
+    payments.forEach(payment => {
+      if (!payment.paid_at) {
+        return;
+      }
+
+      const paidDate =
+        new Date(payment.paid_at);
+
+      const month = months.find(
+        item =>
+          item.year ===
+            paidDate.getFullYear() &&
+          item.month ===
+            paidDate.getMonth()
+      );
+
+      if (month) {
+        month.total +=
+          Number(payment.amount);
+      }
+    });
+
+    payments.forEach(payment => {
+      if (
+        payment.status !== "refunded" ||
+        !payment.refunded_at
+      ) {
+        return;
+      }
+
+      const refundedDate =
+        new Date(payment.refunded_at);
+
+      const month = months.find(
+        item =>
+          item.year ===
+            refundedDate.getFullYear() &&
+          item.month ===
+            refundedDate.getMonth()
+      );
+
+      if (month) {
+        month.total -=
+          Number(payment.amount);
+      }
+    });
+
+    const maximumValue = Math.max(
+      ...months.map(month => month.total),
+      1
+    );
+
+    const recentTransactions = [
+      ...payments,
+    ]
+      .filter(payment =>
+        [
+          "paid",
+          "refunded",
+          "refund_pending",
+        ].includes(payment.status)
+      )
+      .sort((firstPayment, secondPayment) => {
+        const firstDate =
+          firstPayment.refunded_at ||
+          firstPayment.paid_at ||
+          firstPayment.created_at;
+
+        const secondDate =
+          secondPayment.refunded_at ||
+          secondPayment.paid_at ||
+          secondPayment.created_at;
+
+        return (
+          new Date(secondDate).getTime() -
+          new Date(firstDate).getTime()
+        );
+      })
+      .slice(0, 10);
+      
+    return {
+      grossRevenue,
+      refundedAmount,
+      netRevenue,
+      confirmedPayments:
+        monthlyPayments.length,
+      refundedPayments:
+        monthlyRefunds.length,
+      recentTransactions,
+
+      months: months.map(month => ({
+        ...month,
+
+      height:
+        month.total > 0
+          ? Math.max(
+              4,
+              (month.total / maximumValue) * 100
+            )
+          : 0,
+      })),
+    };
+  }, [payments]);
+
+  if (loading) {
+    return (
+      <div className="content">
+        <section className="panel">
+          <p>
+            Carregando dados financeiros...
+          </p>
+        </section>
+      </div>
+    );
+  }
+
+  if (financeError) {
+    return (
+      <div className="content">
+        <section className="panel">
+          <p className="form-error">
+            {financeError}
+          </p>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="content">
       <div className="kpis finance-kpis">
-        <Kpi icon="$" label="Receita no mês" value="R$ 28.540" note="+18,2% vs. mês anterior" tone="green" />
-        <Kpi icon="↘" label="Despesas" value="R$ 9.860" note="34,5% da receita" tone="gold" />
-        <Kpi icon="◇" label="Lucro estimado" value="R$ 18.680" note="Margem de 65,5%" tone="green" />
+        <Kpi
+          icon="$"
+          label="Receita no mês"
+          value={money(
+            financeSummary.grossRevenue
+          )}
+          note={`${financeSummary.confirmedPayments} pagamento(s) confirmado(s)`}
+          tone="green"
+        />
+
+        <Kpi
+          icon="↘"
+          label="Reembolsos no mês"
+          value={money(
+            financeSummary.refundedAmount
+          )}
+          note={`${financeSummary.refundedPayments} reembolso(s) realizado(s)`}
+          tone="gold"
+        />
+
+        <Kpi
+          icon="◇"
+          label="Receita líquida"
+          value={money(
+            financeSummary.netRevenue
+          )}
+          note="Receita recebida menos reembolsos"
+          tone="green"
+        />
       </div>
+
       <section className="panel chart-panel">
-        <PanelHead icon="▥" title="Fluxo financeiro" subtitle="Últimos 7 meses" />
+        <PanelHead
+          icon="▥"
+          title="Fluxo financeiro"
+          subtitle="Receita líquida dos últimos 7 meses"
+        />
+
         <div className="chart">
-          {[42, 58, 48, 72, 65, 82, 94].map((h, i) => (
-            <div key={i}><i style={{ height: `${h}%` }} /><small>{["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul"][i]}</small></div>
-          ))}
+          {financeSummary.months.map(
+            month => (
+              <div
+                key={`${month.year}-${month.month}`}
+                title={money(month.total)}
+              >
+                <i
+                  style={{
+                    height:
+                      `${month.height}%`,
+                  }}
+                />
+
+                <small>
+                  {month.label}
+                </small>
+              </div>
+            )
+          )}
         </div>
+      </section>
+
+      <section className="panel finance-history">
+        <PanelHead
+          icon="$"
+          title="Movimentações"
+          subtitle="Pagamentos e reembolsos recentes"
+        />
+
+        {financeSummary.recentTransactions.length ===
+        0 ? (
+          <p className="finance-empty">
+            Nenhuma movimentação financeira encontrada.
+          </p>
+        ) : (
+          <div className="finance-table-wrapper">
+            <table className="finance-table">
+              <thead>
+                <tr>
+                  <th>Pedido</th>
+                  <th>Movimentação</th>
+                  <th>Data</th>
+                  <th>Situação</th>
+                  <th>Valor</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {financeSummary.recentTransactions.map(
+                  payment => {
+                    const isRefunded =
+                      payment.status === "refunded";
+
+                    const isRefundPending =
+                      payment.status ===
+                      "refund_pending";
+
+                    const transactionDate =
+                      payment.refunded_at ||
+                      payment.paid_at ||
+                      payment.created_at;
+
+                    return (
+                      <tr key={payment.id}>
+                        <td>
+                          <strong>
+                            {payment.orders?.order_number
+                              ? `#${payment.orders.order_number}`
+                              : "Pedido"}
+                          </strong>
+                        </td>
+
+                        <td>
+                          {isRefunded ||
+                          isRefundPending
+                            ? "Reembolso"
+                            : "Pagamento"}
+                        </td>
+
+                        <td>
+                          {new Date(
+                            transactionDate
+                          ).toLocaleString(
+                            "pt-BR",
+                            {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            }
+                          )}
+                        </td>
+
+                        <td>
+                          <span
+                            className={`finance-status ${
+                              isRefunded
+                                ? "refunded"
+                                : isRefundPending
+                                  ? "pending"
+                                  : "paid"
+                            }`}
+                          >
+                            {isRefunded
+                              ? "Reembolsado"
+                              : isRefundPending
+                                ? "Reembolso pendente"
+                                : "Pago"}
+                          </span>
+                        </td>
+
+                        <td
+                          className={
+                            isRefunded ||
+                            isRefundPending
+                              ? "refund-value"
+                              : "payment-value"
+                          }
+                        >
+                          {isRefunded ||
+                          isRefundPending
+                            ? "− "
+                            : "+ "}
+
+                          {money(
+                            Number(payment.amount)
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  }
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
   );
@@ -7297,6 +7894,16 @@ function Reports({
   orders: AppOrder[];
   loading: boolean;
 }) {
+
+  const [salesItems, setSalesItems] =
+    useState<ProductSalesRow[]>([]);
+
+  const [salesLoading, setSalesLoading] =
+    useState(true);
+
+  const [salesError, setSalesError] =
+    useState("");
+
   const averageRating =
     reviews.length > 0
       ? reviews.reduce(
@@ -7305,6 +7912,206 @@ function Reports({
           0
         ) / reviews.length
       : 0;
+
+  const validOrderIds = useMemo(
+    () =>
+      orders
+        .filter(
+          order =>
+            order.statusCode !== "cancelled"
+        )
+        .map(order => order.databaseId),
+    [orders]
+  );
+
+  useEffect(() => {
+    let componentActive = true;
+
+    async function loadProductSales() {
+      setSalesLoading(true);
+      setSalesError("");
+
+      if (validOrderIds.length === 0) {
+        setSalesItems([]);
+        setSalesLoading(false);
+        return;
+      }
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("order_items")
+        .select(`
+          order_id,
+          product_name,
+          quantity,
+          unit_price
+        `)
+        .in("order_id", validOrderIds);
+
+      if (!componentActive) {
+        return;
+      }
+
+      if (error) {
+        console.error(
+          "Erro ao carregar produtos vendidos:",
+          error
+        );
+
+        setSalesError(
+          "Não foi possível carregar o ranking de produtos."
+        );
+
+        setSalesLoading(false);
+        return;
+      }
+
+      setSalesItems(
+        (data || []) as ProductSalesRow[]
+      );
+
+      setSalesLoading(false);
+    }
+
+    loadProductSales();
+
+    return () => {
+      componentActive = false;
+    };
+  }, [validOrderIds]);
+
+  const productRanking = useMemo(() => {
+  const productMap = new Map<
+      string,
+      {
+        name: string;
+        quantity: number;
+        revenue: number;
+      }
+    >();
+
+    salesItems.forEach(item => {
+      const productName =
+        item.product_name.trim();
+
+      const currentProduct =
+        productMap.get(productName) || {
+          name: productName,
+          quantity: 0,
+          revenue: 0,
+        };
+
+      currentProduct.quantity +=
+        Number(item.quantity);
+
+      currentProduct.revenue +=
+        Number(item.unit_price) *
+        Number(item.quantity);
+
+      productMap.set(
+        productName,
+        currentProduct
+      );
+    });
+
+    const products = Array.from(
+      productMap.values()
+    )
+      .sort(
+        (firstProduct, secondProduct) =>
+          secondProduct.quantity -
+          firstProduct.quantity
+      )
+      .slice(0, 5);
+
+    const maximumQuantity = Math.max(
+      ...products.map(
+        product => product.quantity
+      ),
+      1
+    );
+
+    return products.map(
+      (product, index) => ({
+        ...product,
+        position: index + 1,
+        percentage:
+          (product.quantity /
+            maximumQuantity) *
+          100,
+      })
+    );
+  }, [salesItems]);
+
+  const reportSummary = useMemo(() => {
+    const validOrders = orders.filter(
+      order =>
+        order.statusCode !== "cancelled"
+    );
+
+    const completedOrders = orders.filter(
+      order =>
+        order.statusCode === "completed"
+    );
+
+    const cancelledOrders = orders.filter(
+      order =>
+        order.statusCode === "cancelled"
+    );
+
+    const totalOrderValue =
+      validOrders.reduce(
+        (total, order) =>
+          total + priceNumber(order.value),
+        0
+      );
+
+    const averageTicket =
+      validOrders.length > 0
+        ? totalOrderValue /
+          validOrders.length
+        : 0;
+
+    const uniqueClients = new Set(
+      validOrders.map(order =>
+        order.client
+          .trim()
+          .toLowerCase()
+      )
+    ).size;
+
+    const completionRate =
+      orders.length > 0
+        ? Math.round(
+            (completedOrders.length /
+              orders.length) *
+              100
+          )
+        : 0;
+
+    const cancellationRate =
+      orders.length > 0
+        ? Math.round(
+            (cancelledOrders.length /
+              orders.length) *
+              100
+          )
+        : 0;
+
+    return {
+      totalOrderValue,
+      averageTicket,
+      uniqueClients,
+      completedOrders:
+        completedOrders.length,
+      cancelledOrders:
+        cancelledOrders.length,
+      completionRate,
+      cancellationRate,
+    };
+  }, [orders]);
 
   function reviewDate(createdAt: string) {
     return new Date(
@@ -7455,41 +8262,133 @@ function Reports({
         )}
       </section>
 
+      <section className="panel product-ranking-panel">
+        <PanelHead
+          icon="♨"
+          title="Produtos mais vendidos"
+          subtitle="Ranking dos pedidos não cancelados"
+        />
+
+        {salesLoading ? (
+          <div className="empty-notifications">
+            <span>◌</span>
+            <p>Carregando vendas...</p>
+          </div>
+        ) : salesError ? (
+          <p className="form-error">
+            {salesError}
+          </p>
+        ) : productRanking.length === 0 ? (
+          <div className="empty-notifications">
+            <span>▤</span>
+            <p>
+              Nenhum produto vendido encontrado.
+            </p>
+          </div>
+        ) : (
+          <div className="product-ranking-list">
+            {productRanking.map(product => (
+              <article key={product.name}>
+                <strong className="ranking-position">
+                  {product.position}
+                </strong>
+
+                <div className="ranking-product">
+                  <header>
+                    <div>
+                      <h3>{product.name}</h3>
+
+                      <small>
+                        {product.quantity} unidade(s)
+                        vendida(s)
+                      </small>
+                    </div>
+
+                    <b>
+                      {money(product.revenue)}
+                    </b>
+                  </header>
+
+                  <div className="ranking-bar">
+                    <i
+                      style={{
+                        width:
+                          `${product.percentage}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       <div className="report-grid">
-        {[
-          [
-            "Vendas por período",
-            "Acompanhe faturamento, ticket médio e evolução.",
-          ],
-          [
-            "Produtos mais vendidos",
-            "Descubra os itens favoritos dos seus clientes.",
-          ],
-          [
-            "Desempenho da produção",
-            "Avalie prazos, volume e eficiência da equipe.",
-          ],
-          [
-            "Clientes recorrentes",
-            "Identifique fidelidade e oportunidades de contato.",
-          ],
-        ].map(([title, description], index) => (
-          <article
-            className="panel report"
-            key={title}
-          >
-            <span>
-              {["▥", "♨", "◴", "♙"][index]}
-            </span>
+        <article className="panel report">
+          <span>▥</span>
 
-            <h3>{title}</h3>
-            <p>{description}</p>
+          <h3>Valor dos pedidos</h3>
 
-            <button>
-              Gerar relatório ›
-            </button>
-          </article>
-        ))}
+          <strong className="report-value">
+            {money(
+              reportSummary.totalOrderValue
+            )}
+          </strong>
+
+          <p>
+            Ticket médio de{" "}
+            {money(
+              reportSummary.averageTicket
+            )}{" "}
+            por pedido não cancelado.
+          </p>
+        </article>
+
+        <article className="panel report">
+          <span>✓</span>
+
+          <h3>Pedidos concluídos</h3>
+
+          <strong className="report-value">
+            {reportSummary.completedOrders}
+          </strong>
+
+          <p>
+            {reportSummary.completionRate}% dos
+            pedidos cadastrados foram concluídos.
+          </p>
+        </article>
+
+        <article className="panel report">
+          <span>♙</span>
+
+          <h3>Clientes atendidos</h3>
+
+          <strong className="report-value">
+            {reportSummary.uniqueClients}
+          </strong>
+
+          <p>
+            Clientes diferentes com pedidos não
+            cancelados.
+          </p>
+        </article>
+
+        <article className="panel report">
+          <span>×</span>
+
+          <h3>Cancelamentos</h3>
+
+          <strong className="report-value">
+            {reportSummary.cancelledOrders}
+          </strong>
+
+          <p>
+            {reportSummary.cancellationRate}% dos
+            pedidos cadastrados foram cancelados.
+          </p>
+        </article>
       </div>
     </div>
   );
