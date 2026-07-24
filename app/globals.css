@@ -617,3 +617,95 @@
     padding-bottom: 12px;
   }
 }
+
+.settings-toggle {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid #ead8cc;
+  border-radius: 12px;
+  background: #fffaf6;
+  cursor: pointer;
+}
+
+.settings-toggle > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.settings-toggle-control {
+  position: relative;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: #d8cbc3;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.settings-toggle-control i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(71, 30, 39, 0.18);
+  transition: transform 0.2s ease;
+}
+
+.settings-toggle
+  > input:checked
+  + .settings-toggle-control {
+  background: #761735;
+}
+
+.settings-toggle
+  > input:checked
+  + .settings-toggle-control
+  i {
+  transform: translateX(20px);
+}
+
+.settings-toggle
+  > input:focus-visible
+  + .settings-toggle-control {
+  box-shadow:
+    0 0 0 3px rgba(118, 23, 53, 0.18);
+}
+
+.settings-toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-toggle-copy strong {
+  color: #4c1025;
+  font-size: 14px;
+}
+
+.settings-toggle-copy small {
+  color: #886f67;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+  .settings-toggle {
+    align-items: flex-start;
+    padding: 14px;
+  }
+
+  .settings-toggle-control {
+    margin-top: 2px;
+  }
+}

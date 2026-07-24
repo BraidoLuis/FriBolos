@@ -159,6 +159,34 @@ type ProductRow = {
   }[];
 };
 
+type StoreSettings = {
+  id: number;
+  store_name: string;
+  description: string | null;
+  cnpj: string | null;
+
+  contact_email: string | null;
+  whatsapp: string | null;
+  instagram: string | null;
+
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+
+  opening_time: string | null;
+  closing_time: string | null;
+  business_days: string | null;
+
+  minimum_order_value: number;
+  delivery_fee: number;
+
+  accepts_orders: boolean;
+
+  created_at: string;
+  updated_at: string;
+};
+
 type OrderCreationResult =
   | {
       success: true;
@@ -593,6 +621,21 @@ export default function Home() {
 
   const [savingOrder, setSavingOrder] =
     useState(false);
+
+  const [
+    storeSettings,
+    setStoreSettings,
+  ] = useState<StoreSettings | null>(null);
+
+  const [
+    storeSettingsLoading,
+    setStoreSettingsLoading,
+  ] = useState(true);
+
+  const [
+    savingStoreSettings,
+    setSavingStoreSettings,
+  ] = useState(false);
   /*
    * Recupera a sessão do Supabase quando
    * o usuário atualiza ou reabre a página.
@@ -1241,6 +1284,86 @@ export default function Home() {
       componentActive = false;
     };
   }, [modal, role]);
+
+  useEffect(() => {
+  let componentActive = true;
+
+  async function loadStoreSettings() {
+      if (
+        authLoading ||
+        role !== "admin"
+      ) {
+        return;
+      }
+
+      setStoreSettingsLoading(true);
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("store_settings")
+        .select(`
+          id,
+          store_name,
+          description,
+          cnpj,
+          contact_email,
+          whatsapp,
+          instagram,
+          address,
+          city,
+          state,
+          zip_code,
+          opening_time,
+          closing_time,
+          business_days,
+          minimum_order_value,
+          delivery_fee,
+          accepts_orders,
+          created_at,
+          updated_at
+        `)
+        .eq("id", 1)
+        .single();
+
+      if (!componentActive) {
+        return;
+      }
+
+      if (error) {
+        console.error(
+          "Erro ao carregar configurações:",
+          error
+        );
+
+        setStoreSettings(null);
+        setStoreSettingsLoading(false);
+
+        setToast(
+          "Não foi possível carregar as configurações."
+        );
+
+        setTimeout(() => {
+          setToast("");
+        }, 2800);
+
+        return;
+      }
+
+      setStoreSettings(
+        data as StoreSettings
+      );
+
+      setStoreSettingsLoading(false);
+    }
+
+    loadStoreSettings();
+
+    return () => {
+      componentActive = false;
+    };
+  }, [authLoading, role]);
 
   const filteredOrders = useMemo(
     () =>
@@ -1906,6 +2029,165 @@ export default function Home() {
     }
   }
 
+  async function saveStoreSettings(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
+    e.preventDefault();
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const minimumOrderValue = Number(
+      String(
+        formData.get("minimumOrderValue") || "0"
+      ).replace(",", ".")
+    );
+
+    const deliveryFee = Number(
+      String(
+        formData.get("deliveryFee") || "0"
+      ).replace(",", ".")
+    );
+
+    setSavingStoreSettings(true);
+
+    try {
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("store_settings")
+        .update({
+          store_name: String(
+            formData.get("storeName") || ""
+          ).trim(),
+
+          description:
+            String(
+              formData.get("description") || ""
+            ).trim() || null,
+
+          cnpj:
+            String(
+              formData.get("cnpj") || ""
+            ).trim() || null,
+
+          contact_email:
+            String(
+              formData.get("contactEmail") || ""
+            ).trim() || null,
+
+          whatsapp:
+            String(
+              formData.get("whatsapp") || ""
+            ).trim() || null,
+
+          instagram:
+            String(
+              formData.get("instagram") || ""
+            ).trim() || null,
+
+          address:
+            String(
+              formData.get("address") || ""
+            ).trim() || null,
+
+          city:
+            String(
+              formData.get("city") || ""
+            ).trim() || null,
+
+          state:
+            String(
+              formData.get("state") || ""
+            ).trim() || null,
+
+          zip_code:
+            String(
+              formData.get("zipCode") || ""
+            ).trim() || null,
+
+          opening_time:
+            String(
+              formData.get("openingTime") || ""
+            ) || null,
+
+          closing_time:
+            String(
+              formData.get("closingTime") || ""
+            ) || null,
+
+          business_days:
+            String(
+              formData.get("businessDays") || ""
+            ).trim() || null,
+
+          minimum_order_value:
+            Number.isFinite(minimumOrderValue)
+              ? minimumOrderValue
+              : 0,
+
+          delivery_fee:
+            Number.isFinite(deliveryFee)
+              ? deliveryFee
+              : 0,
+
+          accepts_orders:
+            formData.get("acceptsOrders") === "on",
+
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("id", 1)
+        .select()
+        .single();
+
+      if (error) {
+        console.error(
+          "Erro ao salvar configurações:",
+          error
+        );
+
+        setToast(
+          "Não foi possível salvar as configurações."
+        );
+
+        setTimeout(() => {
+          setToast("");
+        }, 2800);
+
+        return;
+      }
+
+      setStoreSettings(
+        data as StoreSettings
+      );
+
+      setToast(
+        "Configurações salvas com sucesso!"
+      );
+
+      setTimeout(() => {
+        setToast("");
+      }, 2400);
+    } catch (error) {
+      console.error(
+        "Erro inesperado ao salvar configurações:",
+        error
+      );
+
+      setToast(
+        "Ocorreu um erro ao salvar as configurações."
+      );
+
+      setTimeout(() => {
+        setToast("");
+      }, 2800);
+    } finally {
+      setSavingStoreSettings(false);
+    }
+  }
+
   async function handleLogout() {
   
     sessionStorage.removeItem(
@@ -2343,7 +2625,12 @@ export default function Home() {
         )}
 
         {screen === "Configurações" && (
-          <Settings />
+          <Settings
+            settings={storeSettings}
+            loading={storeSettingsLoading}
+            saving={savingStoreSettings}
+            onSave={saveStoreSettings}
+          />
         )}
       </section>
 
@@ -9287,21 +9574,306 @@ function Reports({
   );
 }
 
-function Settings() {
+function Settings({
+  settings,
+  loading,
+  saving,
+  onSave,
+}: {
+  settings: StoreSettings | null;
+  loading: boolean;
+  saving: boolean;
+  onSave: (
+    e: React.FormEvent<HTMLFormElement>
+  ) => Promise<void>;
+}) {
+  if (loading) {
+    return (
+      <div className="content">
+        <section className="panel settings">
+          <div className="empty-cart">
+            <span>◌</span>
+            <h3>Carregando configurações...</h3>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <div className="content">
+        <section className="panel settings">
+          <div className="empty-cart">
+            <span>⚙</span>
+            <h3>
+              Configurações não encontradas
+            </h3>
+
+            <p>
+              Não foi possível carregar os dados da
+              confeitaria.
+            </p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="content">
-      <section className="panel settings">
-        <h2>Dados da confeitaria</h2>
-        <p>Informações usadas nos pedidos e relatórios.</p>
-        <div className="form-grid">
-          <label>Nome da confeitaria<input defaultValue="Doce Encanto Confeitaria" /></label>
-          <label>CNPJ<input defaultValue="12.345.678/0001-90" /></label>
-          <label>E-mail<input defaultValue="contato@doceencanto.com.br" /></label>
-          <label>Telefone<input defaultValue="(22) 99999-1234" /></label>
-          <label className="wide">Endereço<input defaultValue="Rua das Flores, 120 — Centro" /></label>
+      <form
+        key={settings.updated_at}
+        className="panel settings"
+        onSubmit={onSave}
+      >
+        <div className="panel-head">
+          <span>⚙</span>
+
+          <div>
+            <p className="eyebrow">
+              CONFIGURAÇÕES
+            </p>
+
+            <h2>Dados da confeitaria</h2>
+
+            <p>
+              Informações usadas nos pedidos,
+              contatos e relatórios.
+            </p>
+          </div>
         </div>
-        <button className="primary">Salvar alterações</button>
-      </section>
+
+        <div className="form-grid">
+          <label>
+            Nome da confeitaria
+
+            <input
+              required
+              name="storeName"
+              defaultValue={settings.store_name}
+              placeholder="Nome da confeitaria"
+            />
+          </label>
+
+          <label>
+            CNPJ
+
+            <input
+              name="cnpj"
+              defaultValue={settings.cnpj || ""}
+              placeholder="00.000.000/0000-00"
+            />
+          </label>
+
+          <label className="wide">
+            Descrição
+
+            <textarea
+              name="description"
+              defaultValue={
+                settings.description || ""
+              }
+              placeholder="Uma breve descrição da confeitaria"
+            />
+          </label>
+
+          <label>
+            E-mail de contato
+
+            <input
+              name="contactEmail"
+              type="email"
+              defaultValue={
+                settings.contact_email || ""
+              }
+              placeholder="contato@fribolos.com.br"
+            />
+          </label>
+
+          <label>
+            WhatsApp
+
+            <input
+              name="whatsapp"
+              defaultValue={
+                settings.whatsapp || ""
+              }
+              placeholder="(22) 99999-9999"
+            />
+          </label>
+
+          <label>
+            Instagram
+
+            <input
+              name="instagram"
+              defaultValue={
+                settings.instagram || ""
+              }
+              placeholder="@fribolos"
+            />
+          </label>
+
+          <label>
+            CEP
+
+            <input
+              name="zipCode"
+              defaultValue={
+                settings.zip_code || ""
+              }
+              placeholder="00000-000"
+            />
+          </label>
+
+          <label className="wide">
+            Endereço
+
+            <input
+              name="address"
+              defaultValue={
+                settings.address || ""
+              }
+              placeholder="Rua, número e bairro"
+            />
+          </label>
+
+          <label>
+            Cidade
+
+            <input
+              name="city"
+              defaultValue={
+                settings.city || ""
+              }
+              placeholder="Cidade"
+            />
+          </label>
+
+          <label>
+            Estado
+
+            <input
+              name="state"
+              maxLength={2}
+              defaultValue={
+                settings.state || ""
+              }
+              placeholder="RJ"
+            />
+          </label>
+
+          <label>
+            Horário de abertura
+
+            <input
+              name="openingTime"
+              type="time"
+              defaultValue={
+                settings.opening_time
+                  ? settings.opening_time.slice(
+                      0,
+                      5
+                    )
+                  : ""
+              }
+            />
+          </label>
+
+          <label>
+            Horário de encerramento
+
+            <input
+              name="closingTime"
+              type="time"
+              defaultValue={
+                settings.closing_time
+                  ? settings.closing_time.slice(
+                      0,
+                      5
+                    )
+                  : ""
+              }
+            />
+          </label>
+
+          <label className="wide">
+            Dias de funcionamento
+
+            <input
+              name="businessDays"
+              defaultValue={
+                settings.business_days || ""
+              }
+              placeholder="Ex.: Segunda a sábado"
+            />
+          </label>
+
+          <label>
+            Pedido mínimo
+
+            <input
+              name="minimumOrderValue"
+              type="number"
+              min="0"
+              step="0.01"
+              defaultValue={
+                settings.minimum_order_value
+              }
+            />
+          </label>
+
+          <label>
+            Taxa de entrega
+
+            <input
+              name="deliveryFee"
+              type="number"
+              min="0"
+              step="0.01"
+              defaultValue={
+                settings.delivery_fee
+              }
+            />
+          </label>
+          
+          <label className="wide settings-toggle">
+            <input
+              name="acceptsOrders"
+              type="checkbox"
+              defaultChecked={
+                settings.accepts_orders
+              }
+            />
+
+            <span className="settings-toggle-control">
+              <i />
+            </span>
+
+            <span className="settings-toggle-copy">
+              <strong>
+                Aceitar novos pedidos
+              </strong>
+
+              <small>
+                Quando desativado, novos pedidos ficam
+                temporariamente indisponíveis.
+              </small>
+            </span>
+          </label>
+        </div>
+
+        <button
+          className="primary"
+          type="submit"
+          disabled={saving}
+        >
+          {saving
+            ? "Salvando alterações..."
+            : "Salvar alterações"}
+        </button>
+      </form>
     </div>
   );
 }
