@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import type {
   Screen,
@@ -27,6 +30,51 @@ import { AdminContent } from "./components/admin/admin-content";
 export default function Home() {
   const [screen, setScreen] =
     useState<Screen>("Visão geral");
+
+  useEffect(() => {
+    const savedScreen =
+      sessionStorage.getItem(
+        "fribolos-admin-screen"
+      );
+
+    const validScreens: Screen[] = [
+      "Visão geral",
+      "Pedidos",
+      "Orçamentos",
+      "Produção",
+      "Cardápio",
+      "Estoque",
+      "Clientes",
+      "Financeiro",
+      "Relatórios",
+      "Configurações",
+    ];
+
+    if (
+      savedScreen &&
+      validScreens.includes(
+        savedScreen as Screen
+      )
+    ) {
+      const timer =
+        window.setTimeout(() => {
+          setScreen(
+            savedScreen as Screen
+          );
+        }, 0);
+
+      return () => {
+        window.clearTimeout(timer);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      "fribolos-admin-screen",
+      screen
+    );
+  }, [screen]);
 
   const [modal, setModal] =
     useState(false);

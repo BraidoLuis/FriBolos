@@ -215,6 +215,10 @@ export function useAuth({
         "fribolos-client-section"
       );
 
+      sessionStorage.removeItem(
+        "fribolos-admin-screen"
+      );
+
       const {
         error: logoutError,
       } =
