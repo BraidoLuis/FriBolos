@@ -1098,3 +1098,45 @@
   object-fit: cover;
   border-radius: inherit;
 }
+
+.login-options-end {
+  justify-content: flex-end;
+}
+
+.order-payment-action {
+  margin-top: 12px;
+}
+
+.pay-existing-order {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  background: #6b1234;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 15px;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.pay-existing-order:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.pay-existing-order:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.payment-success-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.payment-success-actions .primary {
+  min-width: 190px;
+}

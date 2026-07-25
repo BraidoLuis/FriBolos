@@ -254,6 +254,7 @@ type CartItem = { product: Product; quantity: number };
 type QuoteRow = {
   id: string;
   quote_number: number | string;
+  order_id: string | null;
   customer_name: string;
   title: string;
   details: string;
@@ -282,6 +283,7 @@ type DashboardPaymentRow = {
 
 type Quote = {
   databaseId: string;
+  orderId: string | null;
   id: string;
   client: string;
   item: string;
@@ -292,9 +294,7 @@ type Quote = {
   date: string;
   time: string;
   adminMessage: string;
-
   imagePath: string;
-
   image: string;
 };
 
@@ -446,6 +446,22 @@ function orderStatusLabel(status: string) {
   return labels[status] || status;
 }
 
+function todayInputDate() {
+  const today = new Date();
+
+  const year = today.getFullYear();
+
+  const month = String(
+    today.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    today.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function orderStatusCode(label: string) {
   const codes: Record<string, string> = {
     Aguardando: "pending",
@@ -583,6 +599,7 @@ function quoteStatusLabel(status: string) {
 function mapQuote(row: QuoteRow): Quote {
   return {
     databaseId: row.id,
+    orderId: row.order_id,
     id: `ORC-${row.quote_number}`,
     client: row.customer_name,
     item: row.title,
@@ -1029,6 +1046,7 @@ export default function Home() {
         .select(`
           id,
           quote_number,
+          order_id,
           customer_name,
           title,
           details,
@@ -1359,7 +1377,6 @@ export default function Home() {
     authLoading,
     role,
     screen,
-    notifications.length,
   ]);
 
   useEffect(() => {
@@ -2453,7 +2470,7 @@ export default function Home() {
   async function handleLogout() {
   
     sessionStorage.removeItem(
-      "doce-gestao-client-section"
+      "fribolos-client-section"
     );
 
     const { error: logoutError } =
@@ -3717,12 +3734,7 @@ function Login({
             </div>
           </label>
 
-          <div className="login-options">
-            <label>
-              <input type="checkbox" defaultChecked />
-              Lembrar de mim
-            </label>
-
+          <div className="login-options login-options-end">
             <button
               type="button"
               disabled={resetLoading}
@@ -4365,6 +4377,7 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
   const [cartToast, setCartToast] = useState("");
   const [requestOrder, setRequestOrder] = useState<string | null>(null);
   const [requestLoading, setRequestLoading,] = useState<string | null>(null);
+  const [payingOrderId, setPayingOrderId,] = useState<string | null>(null);
   const storeName =
     storeSettings?.store_name || "FriBolos";
 
@@ -4409,7 +4422,7 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
   useEffect(() => {
     const savedSection =
       sessionStorage.getItem(
-        "doce-gestao-client-section"
+        "fribolos-client-section"
       ) as ClientSection | null;
 
     const validSections: ClientSection[] = [
@@ -4439,7 +4452,7 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
     }
 
     sessionStorage.setItem(
-      "doce-gestao-client-section",
+      "fribolos-client-section",
       section
     );
   }, [section, sectionRestored]);
@@ -4610,7 +4623,7 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
       setSection("pagamento");
 
       sessionStorage.setItem(
-        "doce-gestao-client-section",
+        "fribolos-client-section",
         "pagamento"
       );
 
@@ -5045,6 +5058,26 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
       e.currentTarget
     );
 
+    const [
+      requestError,
+      setRequestError,
+    ] = useState("");
+
+    const requestedDate = String(
+      data.get("date") || ""
+    );
+
+    if (
+      requestedDate &&
+      requestedDate < todayInputDate()
+    ) {
+      setRequestError(
+        "A nova data não pode ser anterior a hoje."
+      );
+
+      return;
+    }
+
     const success =
       await requestOrderChange(
         requestOrder,
@@ -5075,6 +5108,21 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
 
     const form = e.currentTarget;
     const data = new FormData(form);
+
+    const desiredDate = String(
+      data.get("date") || ""
+    );
+
+    if (
+      desiredDate &&
+      desiredDate < todayInputDate()
+    ) {
+      setQuoteError(
+        "A data desejada não pode ser anterior a hoje."
+      );
+
+      return;
+    }
 
     const referenceImageValue =
       data.get("referenceImage");
@@ -5505,6 +5553,145 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
     }
   }
 
+  async function payExistingOrder(
+    order: ClientOrderRow
+  ) {
+    setPayingOrderId(order.id);
+    setCartToast("");
+
+    try {
+      const {
+        data,
+        error: checkoutError,
+      } = await supabase.functions.invoke(
+        "create-stripe-checkout",
+        {
+          body: {
+            orderId: order.id,
+          },
+        }
+      );
+
+      if (checkoutError) {
+        let errorMessage =
+          "Não foi possível abrir o pagamento seguro.";
+
+        try {
+          const errorContext = (
+            checkoutError as {
+              context?: Response;
+            }
+          ).context;
+
+          if (errorContext) {
+            const errorBody =
+              await errorContext.clone().json();
+
+            console.error(
+              "Resposta da Edge Function:",
+              errorBody
+            );
+
+            if (errorBody?.error) {
+              errorMessage =
+                errorBody.error;
+            }
+          }
+        } catch (contextError) {
+          console.error(
+            "Não foi possível ler a resposta da função:",
+            contextError
+          );
+        }
+
+        console.error(
+          "Erro ao pagar pedido existente:",
+          checkoutError
+        );
+
+        setCartToast(errorMessage);
+
+        setTimeout(() => {
+          setCartToast("");
+        }, 3500);
+
+        return;
+      }
+
+      const checkoutUrl =
+        data?.url as string | undefined;
+
+      if (!checkoutUrl) {
+        setCartToast(
+          data?.error ||
+            "A Stripe não retornou a página de pagamento."
+        );
+
+        setTimeout(() => {
+          setCartToast("");
+        }, 3500);
+
+        return;
+      }
+
+      /*
+      * Este pagamento não veio do carrinho atual.
+      * Remove qualquer carrinho antigo para não aparecer
+      * na confirmação deste pedido.
+      */
+      sessionStorage.removeItem(
+        "stripe-checkout-cart"
+      );
+
+      sessionStorage.setItem(
+        "stripe-checkout-order-id",
+        order.id
+      );
+
+      sessionStorage.setItem(
+        "stripe-checkout-order-number",
+        String(order.order_number)
+      );
+
+      window.location.assign(checkoutUrl);
+    } catch (error) {
+      console.error(
+        "Erro inesperado ao pagar pedido:",
+        error
+      );
+
+      setCartToast(
+        "Ocorreu um erro ao iniciar o pagamento."
+      );
+
+      setTimeout(() => {
+        setCartToast("");
+      }, 3500);
+    } finally {
+      setPayingOrderId(null);
+    }
+  }
+
+  async function answerClientQuote(
+    quoteId: string,
+    decision: "approved" | "rejected"
+  ) {
+    const success = await onQuote(
+      quoteId,
+      decision
+    );
+
+    if (
+      success &&
+      decision === "approved"
+    ) {
+      await loadClientOrders();
+      setSection("pedidos");
+    }
+
+    return success;
+  }
+
   return (
     <main className="client-portal">
       <header className="client-header">
@@ -5782,6 +5969,10 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
                       order.status
                     );
 
+                  const canPayOrder =
+                    order.payment_status === "pending" &&
+                    order.status !== "cancelled";
+
                   return (
                     <article key={order.id}>
                       <div className="product-mini">
@@ -5837,6 +6028,27 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
                             </span>
                           )}
                         </div>
+
+                        {canPayOrder && (
+                          <div className="order-payment-action">
+                            <button
+                              type="button"
+                              className="pay-existing-order"
+                              disabled={
+                                payingOrderId === order.id
+                              }
+                              onClick={() =>
+                                payExistingOrder(order)
+                              }
+                            >
+                              {payingOrderId === order.id
+                                ? "Abrindo pagamento..."
+                                : `Pagar ${money(
+                                    Number(order.total_amount)
+                                  )}`}
+                            </button>
+                          </div>
+                        )}
 
                         {hasPendingRequest && (
                           <span className="request-badge">
@@ -5895,7 +6107,12 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
             </section>
           </>
         )}
-        {section === "orcamentos" && <ClientQuotes  quotes={quotes}  onAnswer={onQuote}/>}
+        {section === "orcamentos" && (
+          <ClientQuotes
+            quotes={quotes}
+            onAnswer={answerClientQuote}
+          />
+        )}
         {section === "catalogo" && <ClientCatalog products={products.filter(p => p.active)} onChoose={p => { setSelectedProduct(p); setSection("novo") }} onAdd={addToCart} />}
         {section === "novo" && (
           <>
@@ -6055,6 +6272,7 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
                     required
                     name="date"
                     type="date"
+                    min={todayInputDate()}
                   />
                 </label>
 
@@ -6128,6 +6346,9 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
             }
 
             onPay={createOrderFromCart}
+            onViewOrders={() => {
+              setSection("pedidos");
+            }}
 
             returning={
               paymentReturnLoading
@@ -6386,6 +6607,7 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
                   required
                   name="date"
                   type="date"
+                  min={todayInputDate()}
                 />
               </label>
 
@@ -6492,7 +6714,7 @@ function MiniCart({ items, onClose, onQuantity, onCheckout, onCatalog }: { items
             </div>
             <footer>
               <div><span>Subtotal</span><b>{money(total)}</b></div>
-              <small>Frete e data de entrega serão combinados com a confeitaria.</small>
+              <small>A forma de recebimento, a data e o horário serão escolhidos na próxima etapa.</small>
               <button className="checkout-cart" onClick={onCheckout}>Finalizar pedido <span>→</span></button>
               <button className="continue-shopping" onClick={onCatalog}>Continuar comprando</button>
             </footer>
@@ -6507,6 +6729,7 @@ function Payment({
   paid,
   cart,
   onPay,
+  onViewOrders,
   returning,
   returnError,
   confirmedOrderNumber,
@@ -6528,6 +6751,8 @@ function Payment({
   onPay: (
     options: CheckoutOrderOptions
   ) => Promise<OrderCreationResult>;
+
+  onViewOrders: () => void;
 
   returning: boolean;
   returnError: string;
@@ -6966,6 +7191,16 @@ async function confirmOrder() {
         </p>
 
         <Status>Confirmado</Status>
+
+        <div className="payment-success-actions">
+          <button
+            type="button"
+            className="primary"
+            onClick={onViewOrders}
+          >
+            Ver meus pedidos
+          </button>
+        </div>
       </div>
     );
   }
@@ -7657,7 +7892,7 @@ function AdminQuotes({
                   name="message"
                   defaultValue={
                     editing.adminMessage ||
-                    "Inclui produção, acabamento e embalagem. Frete a combinar."
+                    "Informe os detalhes incluídos nesta proposta."
                   }
                 />
               </label>
@@ -8528,7 +8763,11 @@ function PanelHead({ icon, title, subtitle, action, onClick }: { icon: string; t
   );
 }
 
-function OrderTable({ orders }: { orders: any[] }) {
+function OrderTable({
+  orders,
+}: {
+  orders: AppOrder[];
+}) {
   return (
     <div className="table-wrap">
       <table>
@@ -8710,8 +8949,7 @@ function Orders({  orders,  openModal,  onStatus,  updatingOrderId,  onResolveRe
                 <option>Aguardando pagamento</option>
                 <option>Em produção</option>
                 <option>Pronto</option>
-                <option>Entregue</option>
-                <option>Cancelado</option>
+                <option>Entregue</option>            
               </select>
               {o.request && (
                 <div className="request-actions">
