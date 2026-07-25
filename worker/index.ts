@@ -1,14 +1,25 @@
-/** Cloudflare Worker entry point for the vinext-starter template. */
+/** Cloudflare Worker entry point for Fribolos */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 
+interface AssetFetcher {
+  fetch(request: Request): Promise<Response>;
+}
+
 interface Env {
-  ASSETS: Fetcher;
-  DB: D1Database;
+  ASSETS: AssetFetcher;
+
   IMAGES: {
     input(stream: ReadableStream): {
-      transform(options: Record<string, unknown>): {
-        output(options: { format: string; quality: number }): Promise<{ response(): Response }>;
+      transform(
+        options: Record<string, unknown>
+      ): {
+        output(options: {
+          format: string;
+          quality: number;
+        }): Promise<{
+          response(): Response;
+        }>;
       };
     };
   };

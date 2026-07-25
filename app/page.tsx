@@ -1137,8 +1137,13 @@ export default function Home() {
 
   useEffect(() => {
     if (authLoading || !role) {
-      setNotifications([]);
-      return;
+      const timer = window.setTimeout(() => {
+        setNotifications([]);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timer);
+      };
     }
 
     let componentActive = true;
@@ -4420,30 +4425,36 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
       : "";
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   useEffect(() => {
-    const savedSection =
-      sessionStorage.getItem(
-        "fribolos-client-section"
-      ) as ClientSection | null;
+    const timer = window.setTimeout(() => {
+      const savedSection =
+        sessionStorage.getItem(
+          "fribolos-client-section"
+        ) as ClientSection | null;
 
-    const validSections: ClientSection[] = [
-      "inicio",
-      "catalogo",
-      "pedidos",
-      "orcamentos",
-      "novo",
-      "pagamento",
-      "avaliacao",
-      "perfil",
-    ];
+      const validSections: ClientSection[] = [
+        "inicio",
+        "catalogo",
+        "pedidos",
+        "orcamentos",
+        "novo",
+        "pagamento",
+        "avaliacao",
+        "perfil",
+      ];
 
-    if (
-      savedSection &&
-      validSections.includes(savedSection)
-    ) {
-      setSection(savedSection);
-    }
+      if (
+        savedSection &&
+        validSections.includes(savedSection)
+      ) {
+        setSection(savedSection);
+      }
 
-    setSectionRestored(true);
+      setSectionRestored(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -4594,13 +4605,27 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
   }
 
   useEffect(() => {
-    loadClientOrders();
+    const timer = window.setTimeout(() => {
+      void loadClientOrders();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
-    if (section === "avaliacao") {
-      loadClientOrders();
+    if (section !== "avaliacao") {
+      return;
     }
+
+    const timer = window.setTimeout(() => {
+      void loadClientOrders();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [section]);
 
   useEffect(() => {
@@ -4941,17 +4966,6 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
       order => order.status === "completed"
     ).length;
 
-  const totalPaidByClient =
-    clientOrders
-      .filter(
-        order => order.payment_status === "paid"
-      )
-      .reduce(
-        (total, order) =>
-          total + Number(order.total_amount),
-        0
-      );
-
   async function requestOrderChange(
     orderId: string,
     requestType:
@@ -5058,11 +5072,6 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
       e.currentTarget
     );
 
-    const [
-      requestError,
-      setRequestError,
-    ] = useState("");
-
     const requestedDate = String(
       data.get("date") || ""
     );
@@ -5071,9 +5080,13 @@ function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  stor
       requestedDate &&
       requestedDate < todayInputDate()
     ) {
-      setRequestError(
+      setCartToast(
         "A nova data não pode ser anterior a hoje."
       );
+
+      setTimeout(() => {
+        setCartToast("");
+      }, 3500);
 
       return;
     }
@@ -9192,7 +9205,7 @@ function Catalog({ products, onChange, onToast }: { products: Product[]; onChang
 
     reader.readAsDataURL(file);
   }
-  function update( id: Product["id"], patch: Partial<Product>) { onChange(products.map(p => p.id === id ? { ...p, ...patch } : p)) }
+  
   async function toggleProductVisibility(
     product: Product
   ) {
