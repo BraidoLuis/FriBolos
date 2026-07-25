@@ -3,8 +3,11 @@ import {
   globalIgnores,
 } from "eslint/config";
 
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
+import nextVitals from
+  "eslint-config-next/core-web-vitals";
+
+import nextTs from
+  "eslint-config-next/typescript";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -13,10 +16,11 @@ const eslintConfig = defineConfig([
   globalIgnores([
     ".next/**",
     "out/**",
+    "build/**",
     "dist/**",
+    ".vercel/**",
     ".sites-runtime/**",
     ".wrangler/**",
-    "node_modules/**",
     "next-env.d.ts",
   ]),
 ]);

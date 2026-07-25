@@ -288,7 +288,16 @@ async function confirmOrder() {
   setProcessing(true);
 
   try {
-    let order = pendingOrder;
+    const savedPendingOrderId =
+      sessionStorage.getItem(
+        "stripe-checkout-order-id"
+      );
+
+    let order =
+      pendingOrder &&
+      savedPendingOrderId === pendingOrder.id
+        ? pendingOrder
+        : null;
 
     if (!order) {
       const result = await onPay({
