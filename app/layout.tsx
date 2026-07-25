@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   description:
     "Sistema de gestão para confeitaria, pedidos, produtos e clientes.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/FaviconFribolos.png",
+    shortcut: "/FaviconFribolos.png",
   },
 };
 

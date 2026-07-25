@@ -1,4 +1,4 @@
-# Doce Gestão
+# FriBolos
 
 Projeto demonstrativo de um SaaS para confeitaria, desenvolvido com React,
 TypeScript, Vinext/Vite e CSS.
@@ -12,7 +12,7 @@ TypeScript, Vinext/Vite e CSS.
 ## Como executar
 
 1. Extraia o arquivo ZIP.
-2. Abra a pasta `doce-gestao` no Visual Studio Code.
+2. Abra a pasta `FriBolos` no Visual Studio Code.
 3. Abra o terminal integrado.
 4. Instale as dependências:
 

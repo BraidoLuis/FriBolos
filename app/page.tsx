@@ -91,6 +91,17 @@ type ClientOrderRow = {
 type UserProfile = {
   full_name: string;
   role: Role;
+  email: string;
+
+  phone: string | null;
+  birth_date: string | null;
+
+  zip_code: string | null;
+  street: string | null;
+  address_number: string | null;
+  complement: string | null;
+  district: string | null;
+  city: string | null;
 };
 
 type AdminOrderItemRow = {
@@ -667,6 +678,11 @@ export default function Home() {
   ] = useState<string | null>(null);
 
   const [
+    passwordRecovery,
+    setPasswordRecovery,
+  ] = useState(false);
+
+  const [
     notificationsOpen,
     setNotificationsOpen,
   ] = useState(false);
@@ -757,7 +773,18 @@ export default function Home() {
           error: profileError,
         } = await supabase
           .from("profiles")
-          .select("full_name, role")
+          .select(`
+            full_name,
+            role,
+            phone,
+            birth_date,
+            zip_code,
+            street,
+            address_number,
+            complement,
+            district,
+            city
+          `)
           .eq("id", session.user.id)
           .single();
 
@@ -787,8 +814,16 @@ export default function Home() {
           return;
         }
 
-        setRole(profile.role as Role);
-        setProfile(profile as UserProfile);
+        const profileRole =
+          profile.role as Role;
+
+        setRole(profileRole);
+
+        setProfile({
+          ...profile,
+          role: profileRole,
+          email: session.user.email || "",
+        });
       } catch (connectionError) {
         console.error(
           "Erro ao restaurar a sessão:",
@@ -806,8 +841,27 @@ export default function Home() {
 
     restoreSession();
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setPasswordRecovery(true);
+          setAuthLoading(false);
+          return;
+        }
+
+        if (!session) {
+          setRole(null);
+          setProfile(null);
+          setAuthLoading(false);
+        }
+      }
+    );
+
     return () => {
       componentActive = false;
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -2532,10 +2586,34 @@ export default function Home() {
   notifications.filter(
     notification => !notification.isRead
   ).length;
+
+  const currentDate = new Intl.DateTimeFormat(
+    "pt-BR",
+    {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+    }
+  )
+    .format(new Date())
+    .toLocaleUpperCase("pt-BR");
   /*
    * Enquanto o Supabase verifica a sessão,
    * não mostra o login nem os painéis.
    */
+
+  if (passwordRecovery) {
+    return (
+      <ResetPassword
+        onComplete={() => {
+          setPasswordRecovery(false);
+          setRole(null);
+          setProfile(null);
+        }}
+      />
+    );
+  }
+
   if (authLoading) {
     return (
       <main className="account-created">
@@ -2543,7 +2621,7 @@ export default function Home() {
           <span>♨</span>
 
           <p className="eyebrow">
-            DOCE GESTÃO
+            FRIBOLOS
           </p>
 
           <h1>Carregando sua conta...</h1>
@@ -2574,13 +2652,12 @@ export default function Home() {
   /*
    * Usuário com role client.
    */
-  if (role === "client") {
+  if (role === "client" && profile) {
     return (
       <>
         <ClientPortal
-          userName={
-            profile?.full_name || "Cliente"
-          }
+          userProfile={profile}
+          onProfileChange={setProfile}
 
           products={products.filter(
             product => !product.archived
@@ -2645,9 +2722,7 @@ export default function Home() {
           <span className="cake">♨</span>
 
           <strong>
-            Doce
-            <br />
-            <em>Gestão</em>
+            {storeSettings?.store_name || "FriBolos"}
           </strong>
         </div>
 
@@ -2700,7 +2775,7 @@ export default function Home() {
 
           <div>
             <p className="eyebrow">
-              QUINTA-FEIRA, 23 DE JULHO
+              {currentDate}
             </p>
 
             <h1>
@@ -3107,6 +3182,166 @@ export default function Home() {
   );
 }
 
+function ResetPassword({
+  onComplete,
+}: {
+  onComplete: () => void;
+}) {
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  async function updatePassword(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
+    e.preventDefault();
+
+    const formData =
+      new FormData(e.currentTarget);
+
+    const password = String(
+      formData.get("password") || ""
+    );
+
+    const confirmation = String(
+      formData.get("confirmation") || ""
+    );
+
+    setError("");
+
+    if (password.length < 6) {
+      setError(
+        "A senha deve possuir pelo menos 6 caracteres."
+      );
+      return;
+    }
+
+    if (password !== confirmation) {
+      setError(
+        "As senhas informadas não coincidem."
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const {
+        error: updateError,
+      } = await supabase.auth.updateUser({
+        password,
+      });
+
+      if (updateError) {
+        console.error(
+          "Erro ao atualizar senha:",
+          updateError
+        );
+
+        setError(
+          updateError.message ||
+            "Não foi possível atualizar a senha."
+        );
+        return;
+      }
+
+      await supabase.auth.signOut();
+      onComplete();
+    } catch (unexpectedError) {
+      console.error(
+        "Erro inesperado ao atualizar senha:",
+        unexpectedError
+      );
+
+      setError(
+        "Ocorreu um erro ao atualizar sua senha."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="login-page">
+      <section className="login-area">
+        <form
+          className="login-card"
+          onSubmit={updatePassword}
+        >
+          <div className="mobile-brand">
+            <span>♨</span>
+            <strong>Fri<em>Bolos</em></strong>
+          </div>
+
+          <p className="eyebrow">
+            RECUPERAÇÃO DE SENHA
+          </p>
+
+          <h2>Crie uma nova senha</h2>
+
+          <p className="login-subtitle">
+            Informe e confirme sua nova senha.
+          </p>
+
+          <label className="login-label">
+            Nova senha
+
+            <div className="login-input">
+              <span>⌑</span>
+
+              <input
+                required
+                minLength={6}
+                type="password"
+                name="password"
+                placeholder="Mínimo de 6 caracteres"
+                autoComplete="new-password"
+              />
+            </div>
+          </label>
+
+          <label className="login-label">
+            Confirmar nova senha
+
+            <div className="login-input">
+              <span>⌑</span>
+
+              <input
+                required
+                minLength={6}
+                type="password"
+                name="confirmation"
+                placeholder="Repita sua nova senha"
+                autoComplete="new-password"
+              />
+            </div>
+          </label>
+
+          {error && (
+            <p className="form-error">
+              {error}
+            </p>
+          )}
+
+          <button
+            className="login-submit"
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? "Atualizando senha..."
+              : "Salvar nova senha"}
+
+            <span>→</span>
+          </button>
+        </form>
+      </section>
+    </main>
+  );
+}
+
 function Login({
   onLogin,
 }: {
@@ -3118,6 +3353,15 @@ function Login({
   const [signup, setSignup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [loginEmail, setLoginEmail] =
+    useState("");
+
+  const [resetLoading, setResetLoading] =
+    useState(false);
+
+  const [resetSent, setResetSent] =
+    useState(false);
 
   async function handleLogin(
     e: React.FormEvent<HTMLFormElement>
@@ -3191,7 +3435,18 @@ function Login({
         error: profileError,
       } = await supabase
         .from("profiles")
-        .select("full_name, role")
+        .select(`
+          full_name,
+          role,
+          phone,
+          birth_date,
+          zip_code,
+          street,
+          address_number,
+          complement,
+          district,
+          city
+        `)
         .eq("id", authData.user.id)
         .single();
 
@@ -3236,8 +3491,9 @@ function Login({
       }
 
       onLogin({
-        full_name: profile.full_name,
+        ...profile,
         role: profileRole,
+        email: authData.user.email || "",
       });
 
     } catch (connectionError) {
@@ -3266,6 +3522,59 @@ function Login({
     );
   }
 
+  async function sendPasswordRecovery() {
+    setError("");
+    setResetSent(false);
+
+    if (!loginEmail.trim()) {
+      setError(
+        "Informe seu e-mail para recuperar a senha."
+      );
+      return;
+    }
+
+    setResetLoading(true);
+
+    try {
+      const {
+        error: resetError,
+      } =
+        await supabase.auth.resetPasswordForEmail(
+          loginEmail.trim().toLowerCase(),
+          {
+            redirectTo:
+              `${window.location.origin}/`,
+          }
+        );
+
+      if (resetError) {
+        console.error(
+          "Erro ao enviar recuperação:",
+          resetError
+        );
+
+        setError(
+          resetError.message ||
+            "Não foi possível enviar o e-mail."
+        );
+        return;
+      }
+
+      setResetSent(true);
+    } catch (unexpectedError) {
+      console.error(
+        "Erro inesperado na recuperação:",
+        unexpectedError
+      );
+
+      setError(
+        "Ocorreu um erro ao enviar o e-mail."
+      );
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
   return (
     <main className="login-page">
       <section className="login-showcase">
@@ -3273,7 +3582,7 @@ function Login({
           <span>♨</span>
 
           <strong>
-            Doce <em>Gestão</em>
+            Fri<em>Bolos</em>
           </strong>
         </div>
 
@@ -3293,20 +3602,6 @@ function Login({
           </span>
         </div>
 
-        <div className="login-quote">
-          <b>“</b>
-
-          <p>
-            Minha rotina ficou muito mais organizada.
-            Agora consigo focar no que amo: criar doces
-            incríveis.
-          </p>
-
-          <small>
-            Marina Borges • Doce Encanto
-          </small>
-        </div>
-
         <div className="login-rings" />
       </section>
 
@@ -3319,7 +3614,7 @@ function Login({
             <span>♨</span>
 
             <strong>
-              Doce <em>Gestão</em>
+              Fri<em>Bolos</em>
             </strong>
           </div>
 
@@ -3375,13 +3670,18 @@ function Login({
             <div className="login-input">
               <span>✉</span>
 
-              <input
-                required
-                type="email"
-                name="email"
-                placeholder="seu@email.com"
-                autoComplete="email"
-              />
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  value={loginEmail}
+                  onChange={event => {
+                    setLoginEmail(event.target.value);
+                    setResetSent(false);
+                  }}
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                />
             </div>
           </label>
 
@@ -3423,14 +3723,27 @@ function Login({
               Lembrar de mim
             </label>
 
-            <button type="button">
-              Esqueci minha senha
+            <button
+              type="button"
+              disabled={resetLoading}
+              onClick={sendPasswordRecovery}
+            >
+              {resetLoading
+                ? "Enviando..."
+                : "Esqueci minha senha"}
             </button>
           </div>
 
           {error && (
             <p className="form-error">
               {error}
+            </p>
+          )}
+
+          {resetSent && (
+            <p className="form-success">
+              ✓ Enviamos um link de recuperação para seu
+              e-mail.
             </p>
           )}
 
@@ -3465,8 +3778,9 @@ function Login({
         </form>
 
         <footer>
-          © 2026 Doce Gestão &nbsp;•&nbsp;
-          Privacidade &nbsp;•&nbsp; Termos de uso
+          © {new Date().getFullYear()} FriBolos
+          &nbsp;•&nbsp; Privacidade
+          &nbsp;•&nbsp; Termos de uso
         </footer>
       </section>
     </main>
@@ -3665,7 +3979,7 @@ function Signup({ onBack }: { onBack: () => void }) {
           <span>♨</span>
 
           <strong>
-            Doce <em>Gestão</em>
+            Fri<em>Bolos</em>
           </strong>
         </div>
 
@@ -3983,7 +4297,9 @@ type ClientSection =
   | "avaliacao"
   | "perfil"
   ;
-function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSettingsLoading,  onQuote,  unreadNotificationsCount,  onOpenNotifications,  onLogout,}: {  userName: string;  products: Product[];  quotes: Quote[];  storeSettings: StoreSettings | null;  storeSettingsLoading: boolean;  onQuote: (    id: string,    decision: "approved" | "rejected"  ) => Promise<boolean>;  unreadNotificationsCount: number;  onOpenNotifications: () => void;  onLogout: () => void;}) {
+function ClientPortal({  userProfile, onProfileChange,  products,  quotes,  storeSettings,  storeSettingsLoading,  onQuote,  unreadNotificationsCount,  onOpenNotifications,  onLogout,}: {  userProfile: UserProfile;   onProfileChange: (    profile: UserProfile  ) => void; products: Product[];  quotes: Quote[];  storeSettings: StoreSettings | null;  storeSettingsLoading: boolean;  onQuote: (    id: string,    decision: "approved" | "rejected"  ) => Promise<boolean>;  unreadNotificationsCount: number;  onOpenNotifications: () => void;  onLogout: () => void;}) {
+  const userName =
+  userProfile.full_name || "Cliente";
   const [section, setSection] =
   useState<ClientSection>("inicio");
   const [clientOrders, setClientOrders] =
@@ -4001,6 +4317,15 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
 
   const [quoteError, setQuoteError] =
     useState("");
+
+  const [profileSaving, setProfileSaving] =
+    useState(false);
+
+  const [profileFormError, setProfileFormError] =
+    useState("");
+
+  const [profileSaved, setProfileSaved] =
+    useState(false);
 
   const [
     createdQuoteNumber,
@@ -4598,6 +4923,22 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
         (order.reviews?.length || 0) === 0
     );
     
+  const completedOrdersCount =
+    clientOrders.filter(
+      order => order.status === "completed"
+    ).length;
+
+  const totalPaidByClient =
+    clientOrders
+      .filter(
+        order => order.payment_status === "paid"
+      )
+      .reduce(
+        (total, order) =>
+          total + Number(order.total_amount),
+        0
+      );
+
   async function requestOrderChange(
     orderId: string,
     requestType:
@@ -5018,6 +5359,152 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
     }
   }
 
+  async function saveClientProfile(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
+    e.preventDefault();
+
+    const formData =
+      new FormData(e.currentTarget);
+
+    const fullName = String(
+      formData.get("fullName") || ""
+    ).trim();
+
+    if (!fullName) {
+      setProfileFormError(
+        "Informe seu nome completo."
+      );
+      return;
+    }
+
+    setProfileSaving(true);
+    setProfileFormError("");
+    setProfileSaved(false);
+
+    try {
+      const {
+        data: userData,
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !userData.user) {
+        console.error(
+          "Erro ao identificar usuário:",
+          userError
+        );
+
+        setProfileFormError(
+          "Não foi possível identificar sua conta."
+        );
+        return;
+      }
+
+      const {
+        data: updatedProfile,
+        error: updateError,
+      } = await supabase
+        .from("profiles")
+        .update({
+          full_name: fullName,
+
+          phone:
+            String(
+              formData.get("phone") || ""
+            ).trim() || null,
+
+          birth_date:
+            String(
+              formData.get("birthDate") || ""
+            ) || null,
+
+          zip_code:
+            String(
+              formData.get("zipCode") || ""
+            ).trim() || null,
+
+          street:
+            String(
+              formData.get("street") || ""
+            ).trim() || null,
+
+          address_number:
+            String(
+              formData.get("addressNumber") || ""
+            ).trim() || null,
+
+          complement:
+            String(
+              formData.get("complement") || ""
+            ).trim() || null,
+
+          district:
+            String(
+              formData.get("district") || ""
+            ).trim() || null,
+
+          city:
+            String(
+              formData.get("city") || ""
+            ).trim() || null,
+
+          updated_at:
+            new Date().toISOString(),
+        })
+        .eq("id", userData.user.id)
+        .select(`
+          full_name,
+          role,
+          phone,
+          birth_date,
+          zip_code,
+          street,
+          address_number,
+          complement,
+          district,
+          city
+        `)
+        .single();
+
+      if (updateError || !updatedProfile) {
+        console.error(
+          "Erro ao atualizar perfil:",
+          updateError
+        );
+
+        setProfileFormError(
+          updateError?.message ||
+            "Não foi possível atualizar seus dados."
+        );
+
+        return;
+      }
+
+      onProfileChange({
+        ...updatedProfile,
+        role: updatedProfile.role as Role,
+        email: userProfile.email,
+      });
+
+      setProfileSaved(true);
+
+      setTimeout(() => {
+        setProfileSaved(false);
+      }, 2800);
+    } catch (error) {
+      console.error(
+        "Erro inesperado ao atualizar perfil:",
+        error
+      );
+
+      setProfileFormError(
+        "Ocorreu um erro ao atualizar seus dados."
+      );
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
   return (
     <main className="client-portal">
       <header className="client-header">
@@ -5179,7 +5666,34 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
             </section>
             <aside className="panel contact-card"><span>♡</span><h2>Precisa de ajuda?</h2><p>Fale diretamente com a confeitaria sobre seu pedido.</p><button  type="button"  disabled={    storeSettingsLoading ||    !whatsappUrl  }  onClick={() => {    if (!whatsappUrl) {      return;    }    window.open(      whatsappUrl,      "_blank",      "noopener,noreferrer"    );  }}>  {storeSettingsLoading    ? "Carregando contato..."    : whatsappUrl      ? "Conversar no WhatsApp"      : "WhatsApp indisponível"}</button><small>  {storeBusinessDays && (    <>      {storeBusinessDays}      <br />    </>  )}  {storeOpeningTime &&  storeClosingTime    ? `Atendimento: ${storeOpeningTime} às ${storeClosingTime}`    : "Consulte nosso horário de atendimento"}</small></aside>
           </div>
-          <div className="client-stats"><article><span>▢</span><div><b>{clientOrders.length}</b><small>Pedidos realizados</small></div></article><article><span>♡</span><div><b>3 anos</b><small>Com a gente</small></div></article><article><span>☆</span><div><b>240 pontos</b><small>Clube Doce</small></div></article></div>
+          <div className="client-stats">
+            <article>
+              <span>▢</span>
+
+              <div>
+                <b>{clientOrders.length}</b>
+                <small>Pedidos realizados</small>
+              </div>
+            </article>
+
+            <article>
+              <span>✓</span>
+
+              <div>
+                <b>{completedOrdersCount}</b>
+                <small>Pedidos entregues</small>
+              </div>
+            </article>
+
+            {/* <article>
+              <span>$</span>
+
+              <div>
+                <b>{money(totalPaidByClient)}</b>
+                <small>Total Gasto</small>
+              </div>
+            </article> */}
+          </div>
         </>}
         {section === "pedidos" && (
           <>
@@ -5226,6 +5740,18 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
                       )
                       .join(", ");
 
+                  const orderProductImage =
+                    order.order_items
+                      .map(item =>
+                        products.find(
+                          product =>
+                            String(product.id) ===
+                            String(item.product_id)
+                        )
+                      )
+                      .find(product => Boolean(product?.image))
+                      ?.image || "";
+
                   const deliveryDescription =
                     `${formatDeliveryDate(
                       order.delivery_date
@@ -5259,7 +5785,14 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
                   return (
                     <article key={order.id}>
                       <div className="product-mini">
-                        🍰
+                        {orderProductImage ? (
+                          <img
+                            src={orderProductImage}
+                            alt={itemDescription}
+                          />
+                        ) : (
+                          <span>🍰</span>
+                        )}
                       </div>
 
                       <div>
@@ -5657,10 +6190,162 @@ function ClientPortal({  userName,  products,  quotes,  storeSettings,  storeSet
             onSubmit={submitOrderReview}
           />
         )}
-        {section === "perfil" && <>
-          <div className="client-page-title"><p className="eyebrow">MINHA CONTA</p><h1>Dados pessoais</h1></div>
-          <section className="panel settings"><div className="form-grid"><label>Nome<input defaultValue={userName} /></label><label>Telefone<input defaultValue="(22) 99987-6543" /></label><label>E-mail<input defaultValue="ana.ribeiro@email.com" /></label><label>Data de nascimento<input type="date" defaultValue="1994-05-18" /></label><label className="wide">Endereço<input defaultValue="Rua das Acácias, 85 — Centro" /></label></div><button className="primary">Salvar alterações</button></section>
-        </>}
+        {section === "perfil" && (
+          <>
+            <div className="client-page-title">
+              <p className="eyebrow">
+                MINHA CONTA
+              </p>
+
+              <h1>Dados pessoais</h1>
+
+              <span>
+                Atualize suas informações pessoais e seu
+                endereço.
+              </span>
+            </div>
+
+            <form
+              className="panel settings"
+              onSubmit={saveClientProfile}
+            >
+              <div className="form-grid">
+                <label>
+                  Nome completo
+
+                  <input
+                    required
+                    name="fullName"
+                    defaultValue={
+                      userProfile.full_name
+                    }
+                  />
+                </label>
+
+                <label>
+                  E-mail
+
+                  <input
+                    disabled
+                    type="email"
+                    value={userProfile.email}
+                  />
+                </label>
+
+                <label>
+                  Telefone
+
+                  <input
+                    name="phone"
+                    defaultValue={
+                      userProfile.phone || ""
+                    }
+                  />
+                </label>
+
+                <label>
+                  Data de nascimento
+
+                  <input
+                    name="birthDate"
+                    type="date"
+                    defaultValue={
+                      userProfile.birth_date || ""
+                    }
+                  />
+                </label>
+
+                <label>
+                  CEP
+
+                  <input
+                    name="zipCode"
+                    defaultValue={
+                      userProfile.zip_code || ""
+                    }
+                  />
+                </label>
+
+                <label>
+                  Rua
+
+                  <input
+                    name="street"
+                    defaultValue={
+                      userProfile.street || ""
+                    }
+                  />
+                </label>
+
+                <label>
+                  Número
+
+                  <input
+                    name="addressNumber"
+                    defaultValue={
+                      userProfile.address_number || ""
+                    }
+                  />
+                </label>
+
+                <label>
+                  Complemento
+
+                  <input
+                    name="complement"
+                    defaultValue={
+                      userProfile.complement || ""
+                    }
+                  />
+                </label>
+
+                <label>
+                  Bairro
+
+                  <input
+                    name="district"
+                    defaultValue={
+                      userProfile.district || ""
+                    }
+                  />
+                </label>
+
+                <label>
+                  Cidade
+
+                  <input
+                    name="city"
+                    defaultValue={
+                      userProfile.city || ""
+                    }
+                  />
+                </label>
+              </div>
+
+              {profileFormError && (
+                <p className="form-error">
+                  {profileFormError}
+                </p>
+              )}
+
+              {profileSaved && (
+                <p className="form-success">
+                  ✓ Dados atualizados com sucesso!
+                </p>
+              )}
+
+              <button
+                className="primary"
+                type="submit"
+                disabled={profileSaving}
+              >
+                {profileSaving
+                  ? "Salvando alterações..."
+                  : "Salvar alterações"}
+              </button>
+            </form>
+          </>
+        )}
       </section>
       {cartOpen && <MiniCart items={cart} onClose={() => setCartOpen(false)} onQuantity={changeQuantity} onCheckout={() => { setCartOpen(false); setPaid(false); setSection("pagamento") }} onCatalog={() => { setCartOpen(false); setSection("catalogo") }} />}
       {requestOrder && (
