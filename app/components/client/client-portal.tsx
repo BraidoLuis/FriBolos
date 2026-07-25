@@ -31,10 +31,6 @@ import {
 } from "../../lib/formatters";
 
 import {
-  getProductImagePath,
-} from "../../lib/product-utils";
-
-import {
   ProductVisual,
   Status,
 } from "../ui";
