@@ -145,7 +145,11 @@ export function AdminTopbar({
           </strong>
 
           <small>
-            Administrador • Sair
+            <span className="user-role">
+              Administrador •{" "}
+            </span>
+
+            Sair
           </small>
         </button>
       </div>
