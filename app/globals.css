@@ -2,6 +2,8 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
+
   --wine: #56162e;
   --wine2: #741f43;
   --berry: #a62f5a;
@@ -13,6 +15,101 @@
   --muted: #756c68;
   --green: #4f8060;
   --pink: #f5e5e7;
+
+  --overlay: rgba(41, 34, 35, 0.42);
+  --shadow-color: rgba(86, 22, 46, 0.1);
+
+  --surface-soft: #f8f1e8;
+  --surface-muted: #f3e5e6;
+  --surface-raised: #fffefa;
+
+  --input-background: #fffaf3;
+  --button-background: #fffdf9;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --wine: #d15b86;
+  --wine2: #df7199;
+  --berry: #c94f7b;
+
+  --cream: #151113;
+  --paper: #20191c;
+
+  --gold: #e4bd55;
+  --line: #44363b;
+
+  --ink: #f4eaed;
+  --muted: #b9a9af;
+
+  --green: #7caf8a;
+  --pink: #38222a;
+
+  --overlay: rgba(0, 0, 0, 0.72);
+  --shadow-color: rgba(0, 0, 0, 0.34);
+
+  --surface-soft: #2a2024;
+  --surface-muted: #302429;
+  --surface-raised: #251d20;
+
+  --input-background: #241c1f;
+  --button-background: #2b2125;
+}
+
+
+.theme-toggle {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  color: var(--wine);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 5px 16px var(--shadow-color);
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.theme-toggle:hover {
+  color: var(--paper);
+  background: var(--wine);
+  border-color: var(--wine);
+  transform: translateY(-2px);
+}
+
+.theme-toggle span {
+  font-size: 21px;
+  line-height: 1;
+}
+
+body,
+.sidebar,
+.topbar,
+.panel,
+.modal,
+input,
+textarea,
+select {
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 * {
@@ -3840,7 +3937,7 @@ td:first-child {
   color: #916c16;
   border-radius: 6px;
   padding: 5px 7px;
-  font-size: 8px;
+  font-size: 14px;
   margin-top: 6px;
 }
 
@@ -5013,4 +5110,354 @@ td:first-child {
 
 .payment-success-actions .primary {
   min-width: 190px;
+}
+
+/* =========================================================
+   CORREÇÕES EXCLUSIVAS DO MODO ESCURO
+   ========================================================= */
+
+:root[data-theme="dark"] body {
+  background: var(--cream);
+  color: var(--ink);
+}
+
+/*
+ * Remove os gradientes brancos que provocavam
+ * a camada clara no topo das páginas.
+ */
+:root[data-theme="dark"] .workspace,
+:root[data-theme="dark"] .client-portal,
+:root[data-theme="dark"] .account-created {
+  background: var(--cream);
+}
+
+/*
+ * Superfícies principais.
+ */
+:root[data-theme="dark"] .panel,
+:root[data-theme="dark"] .kpi,
+:root[data-theme="dark"] .client-header,
+:root[data-theme="dark"] .client-stats article,
+:root[data-theme="dark"] .catalog-card,
+:root[data-theme="dark"] .product,
+:root[data-theme="dark"] .task,
+:root[data-theme="dark"] .account-created section,
+:root[data-theme="dark"] .minicart,
+:root[data-theme="dark"] .minicart > footer,
+:root[data-theme="dark"] .quote-reference {
+  color: var(--ink);
+  background: var(--paper);
+  border-color: var(--line);
+  box-shadow:
+    0 6px 20px var(--shadow-color);
+}
+
+/*
+ * Cards da visão geral.
+ */
+:root[data-theme="dark"] .kpi {
+  background: var(--surface-raised);
+}
+
+:root[data-theme="dark"] .kpi small {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .kpi strong {
+  color: var(--wine);
+}
+
+:root[data-theme="dark"] .kpi em {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .kpi em.green,
+:root[data-theme="dark"] .kpi .green {
+  color: var(--green);
+}
+
+:root[data-theme="dark"] .kpi em.gold,
+:root[data-theme="dark"] .kpi .gold {
+  color: var(--gold);
+}
+
+/*
+ * Faixa de vendas que aparecia clara.
+ */
+:root[data-theme="dark"] .sales-strip {
+  color: var(--muted);
+  background: var(--surface-muted);
+}
+
+:root[data-theme="dark"] .sales-strip strong {
+  color: var(--wine);
+}
+
+:root[data-theme="dark"] .sales-strip em {
+  color: var(--green);
+}
+
+/*
+ * Busca e campos.
+ */
+:root[data-theme="dark"] .search,
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] select {
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder {
+  color: #8f8085;
+}
+
+/*
+ * Botões secundários.
+ */
+:root[data-theme="dark"] .panel-head button,
+:root[data-theme="dark"] .tabs .selected,
+:root[data-theme="dark"] .kanban-col header b,
+:root[data-theme="dark"] .contact-card button {
+  color: var(--wine);
+  background: var(--button-background);
+  border-color: var(--line);
+}
+
+/*
+ * Produção e progresso.
+ */
+:root[data-theme="dark"] .big-progress,
+:root[data-theme="dark"] .progress-row > div {
+  background: #463a35;
+}
+
+:root[data-theme="dark"] .production-card,
+:root[data-theme="dark"] .agenda-card {
+  color: var(--ink);
+}
+
+/*
+ * Componentes administrativos.
+ */
+:root[data-theme="dark"] .tabs {
+  background: var(--surface-soft);
+}
+
+:root[data-theme="dark"] .kanban-col {
+  background: var(--surface-soft);
+}
+
+:root[data-theme="dark"] .task {
+  background: var(--surface-raised);
+}
+
+:root[data-theme="dark"] th {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] td {
+  border-bottom-color: var(--line);
+}
+
+/*
+ * Portal do cliente.
+ */
+:root[data-theme="dark"] .client-header {
+  background: #1c1618;
+  border-bottom-color: var(--line);
+}
+
+:root[data-theme="dark"] .client-header nav button {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .client-header nav button.active {
+  color: #f2b4ca;
+  background: var(--pink);
+}
+
+:root[data-theme="dark"] .client-stats article {
+  background: var(--surface-raised);
+}
+
+:root[data-theme="dark"] .client-panel-title > div > span,
+:root[data-theme="dark"] .client-stats article > span,
+:root[data-theme="dark"] .product-mini {
+  color: var(--wine);
+  background: var(--pink);
+}
+
+:root[data-theme="dark"] .order-detail-row {
+  background: var(--surface-soft);
+}
+
+:root[data-theme="dark"] .order-detail-row div {
+  border-right-color: var(--line);
+}
+
+:root[data-theme="dark"] .timeline::before {
+  background: var(--line);
+}
+
+:root[data-theme="dark"] .timeline i {
+  background: var(--surface-muted);
+}
+
+:root[data-theme="dark"] .timeline .active i {
+  color: white;
+  background: var(--berry);
+  box-shadow:
+    0 0 0 5px rgba(201, 79, 123, 0.2);
+}
+
+/*
+ * Catálogo do cliente.
+ */
+:root[data-theme="dark"] .catalog-filters button {
+  color: var(--muted);
+  background: var(--button-background);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .catalog-filters button.active {
+  color: white;
+  background: var(--berry);
+  border-color: var(--berry);
+}
+
+:root[data-theme="dark"] .catalog-card {
+  background: var(--surface-raised);
+}
+
+:root[data-theme="dark"] .product-img {
+  background:
+    linear-gradient(
+      145deg,
+      #39272e,
+      #2a2024
+    );
+}
+
+:root[data-theme="dark"] .selected-product {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+
+/*
+ * Minicarrinho.
+ */
+:root[data-theme="dark"] .cart-trigger,
+:root[data-theme="dark"] .client-notification-button {
+  color: var(--wine) !important;
+  background: var(--button-background) !important;
+  border-color: var(--line) !important;
+}
+
+:root[data-theme="dark"] .cart-trigger > b,
+:root[data-theme="dark"] .client-notification-button > b,
+:root[data-theme="dark"] .bell > b {
+  border-color: #1c1618;
+}
+
+:root[data-theme="dark"] .minicart {
+  background: var(--paper);
+}
+
+:root[data-theme="dark"] .minicart > footer {
+  background: var(--surface-raised);
+}
+
+:root[data-theme="dark"] .quantity-control {
+  color: var(--ink);
+  background: var(--input-background);
+  border-color: var(--line);
+}
+
+/*
+ * Avisos e mensagens.
+ */
+:root[data-theme="dark"] .form-error {
+  color: #f2b3c8 !important;
+  background: #48232f;
+}
+
+:root[data-theme="dark"] .status {
+  color: #e7d7dc;
+  background: #493e29;
+}
+
+:root[data-theme="dark"] .status.confirmado,
+:root[data-theme="dark"] .status.pronto,
+:root[data-theme="dark"] .status.disponivel {
+  color: #c9ead2;
+  background: #283b2e;
+}
+
+:root[data-theme="dark"] .status.pendente,
+:root[data-theme="dark"] .status.baixo {
+  color: #f2c3d2;
+  background: #462530;
+}
+
+/*
+ * Botão de tema.
+ */
+:root[data-theme="dark"] .theme-toggle {
+  color: #f2c04f;
+  background: #2a2124;
+  border-color: #58434a;
+}
+
+:root[data-theme="dark"] .theme-toggle:hover {
+  color: #21181b;
+  background: #f2c04f;
+}
+
+:root[data-theme="dark"] .login-page,
+:root[data-theme="dark"] .login-area {
+  color: var(--ink);
+  background: var(--cream);
+}
+
+:root[data-theme="dark"] .login-area form,
+:root[data-theme="dark"] .login-card {
+  color: var(--ink);
+  background: var(--cream);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .role-switch,
+:root[data-theme="dark"] .demo-note {
+  background: var(--cream);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .role-switch button {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .role-switch button.active {
+  color: var(--wine);
+  background: var(--surface-raised);
+}
+
+.login-theme-toggle {
+  position: fixed;
+  top: 22px;
+  right: 24px;
+  z-index: 30;
+}
+
+.login-theme-toggle .theme-toggle {
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 800px) {
+  .login-theme-toggle {
+    top: 18px;
+    right: 18px;
+  }
 }

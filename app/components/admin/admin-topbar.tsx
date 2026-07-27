@@ -5,6 +5,10 @@ import {
   getInitials,
 } from "../../lib/formatters";
 
+import {
+  ThemeToggle,
+} from "../theme-toggle";
+
 import type {
   Screen,
 } from "../../types";
@@ -106,6 +110,8 @@ export function AdminTopbar({
             aria-label="Buscar pedidos"
           />
         </label>
+
+        <ThemeToggle />
 
         <button
           type="button"

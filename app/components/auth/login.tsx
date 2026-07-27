@@ -7,6 +7,10 @@ import {
 
 import { supabase } from "../../lib/supabase";
 
+import {
+  ThemeToggle,
+} from "../theme-toggle";
+
 import type {
   Role,
   UserProfile,
@@ -247,6 +251,9 @@ export function Login({
 
   return (
     <main className="login-page">
+      <div className="login-theme-toggle">
+        <ThemeToggle />
+      </div>
       <section className="login-showcase">
         <div className="login-brand">
           <span>♨</span>

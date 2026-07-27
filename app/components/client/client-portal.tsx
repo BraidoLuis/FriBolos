@@ -7,6 +7,10 @@ import {
 
 import { supabase } from "../../lib/supabase";
 
+import {
+  ThemeToggle,
+} from "../theme-toggle";
+
 import type {
   CartItem,
   CheckoutOrderOptions,
@@ -1478,6 +1482,9 @@ export function ClientPortal({
           <button className={section === "avaliacao" ? "active" : ""} onClick={() => setSection("avaliacao")}>Avaliar</button>
         </nav>
         <div className="client-account">
+
+          <ThemeToggle />
+          
           <button
             type="button"
             className="client-notification-button"
