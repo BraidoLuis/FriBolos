@@ -1,6 +1,11 @@
 
 "use client";
 
+import {
+  useEffect,
+  useRef,
+} from "react";
+
 import type { AppNotification } from "../types";
 
 export function NotificationPanel({
@@ -41,8 +46,84 @@ export function NotificationPanel({
     return icons[type] || "✓";
   }
 
+  const panelRef =
+    useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(
+      event: PointerEvent
+    ) {
+      const target =
+        event.target;
+
+      if (
+        !(target instanceof Node)
+      ) {
+        return;
+      }
+
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(
+          target
+        )
+      ) {
+        onClose();
+      }
+    }
+
+    function handleKeyDown(
+      event: KeyboardEvent
+    ) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        onClose();
+      }
+    }
+
+    document.addEventListener(
+      "pointerdown",
+      handleClickOutside
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    return () => {
+      document.removeEventListener(
+        "pointerdown",
+        handleClickOutside
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+    };
+  }, [onClose]);
+
   return (
-    <aside className="notification-panel">
+    <aside
+      ref={panelRef}
+      className="notification-panel"
+    >
       <header>
         <div>
           <p className="eyebrow">

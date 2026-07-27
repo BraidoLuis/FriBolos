@@ -142,7 +142,6 @@ export function AdminSidebar({
         Novo pedido
       </button>
 
-      <div className="side-art" />
     </aside>
   );
 }

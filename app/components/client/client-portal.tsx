@@ -1893,7 +1893,7 @@ export function ClientPortal({
             onAnswer={answerClientQuote}
           />
         )}
-        {section === "catalogo" && <ClientCatalog products={products.filter(p => p.active)} onChoose={p => { setSelectedProduct(p); setSection("novo") }} onAdd={addToCart} />}
+        {section === "catalogo" && <ClientCatalog products={products.filter(p => p.active)} onChoose={p => { setSelectedProduct(p); setSection("novo") }} onAdd={product => {  addToCart(product);  setCartOpen(true);}} />}
         {section === "novo" && (
           <>
             <div className="client-page-title">
