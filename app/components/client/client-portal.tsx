@@ -5,6 +5,10 @@ import {
   useState,
 } from "react";
 
+import {
+  ClientFaq,
+} from "./client-faq";
+
 import { supabase } from "../../lib/supabase";
 
 import {
@@ -2022,6 +2026,8 @@ export function ClientPortal({
           </div>
 
           <ClientReviewsCarousel />
+
+          <ClientFaq />
         </>}
         {section === "pedidos" && (
           <>

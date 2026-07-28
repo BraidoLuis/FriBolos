@@ -397,7 +397,8 @@ export function ClientCatalog({
       </div>
 
       {visibleProducts.length > 0 ? (
-        <div className="client-catalog-grid">
+        <>
+          <div className="client-catalog-grid">
           {visibleProducts.map(
             product => {
               const soldOut =
@@ -549,6 +550,13 @@ export function ClientCatalog({
             }
           )}
         </div>
+        {visibleProducts.length > 1 && (
+          <p className="catalog-mobile-hint">
+            Deslize para ver mais produtos
+            <span>→</span>
+          </p>
+        )}
+      </>
       ) : (
         <section className="catalog-empty">
           <span>⌕</span>
