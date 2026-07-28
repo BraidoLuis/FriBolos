@@ -1676,7 +1676,7 @@ export function ClientPortal({
         </div>
       </header>
       <section className="client-main">
-        {section === "inicio" && <>
+        {section === "inicio" && <>          
           <section className="client-home-hero">
             <div className="client-hero-content">
               <p className="eyebrow">
@@ -1783,6 +1783,96 @@ export function ClientPortal({
               </span>
             </div>
           </section>
+
+                    <section className="client-about-section">
+            <div className="client-about-content">
+              <p className="eyebrow">
+                SOBRE A FRIBOLOS
+              </p>
+
+              <h2>
+                Carinho em cada detalhe,
+                sabor em cada momento.
+              </h2>
+
+              <p>
+                A FriBolos nasceu do desejo de transformar momentos
+                especiais em lembranças ainda mais doces. Acreditamos
+                que cada celebração tem uma história única e merece
+                uma encomenda preparada especialmente para ela. Por
+                isso, cada detalhe é pensado com cuidado, desde a
+                escolha dos ingredientes até a decoração e a
+                apresentação final.
+              </p>
+
+              <p>
+                Nossa produção é artesanal e feita com dedicação,
+                utilizando ingredientes selecionados e combinações
+                pensadas para proporcionar sabor, qualidade e uma
+                experiência especial. Mais do que produzir bolos e
+                doces, queremos participar dos momentos importantes
+                de cada cliente e ajudar a tornar cada comemoração
+                ainda mais inesquecível.
+              </p>
+
+              <p>
+                Produzimos bolos, doces e encomendas personalizadas
+                para aniversários, casamentos, encontros, presentes,
+                conquistas e todas as ocasiões que merecem ser
+                celebradas. Cada pedido pode ser adaptado de acordo
+                com o estilo, o tema e as preferências do cliente,
+                criando uma experiência verdadeiramente única.
+              </p>
+
+              <p>
+                Na FriBolos, carinho, criatividade e cuidado caminham
+                juntos em todas as etapas. Do primeiro contato até a
+                entrega da encomenda, buscamos oferecer um atendimento
+                próximo, transparente e acolhedor, para que você possa
+                aproveitar o seu momento enquanto cuidamos de cada
+                detalhe com todo o amor que ele merece.
+              </p>
+            </div>
+
+            <aside className="client-about-values">
+              <article>
+                <span>♡</span>
+
+                <div>
+                  <b>Feito com carinho</b>
+
+                  <small>
+                    Cada encomenda recebe atenção especial.
+                  </small>
+                </div>
+              </article>
+
+              <article>
+                <span>♨</span>
+
+                <div>
+                  <b>Produção artesanal</b>
+
+                  <small>
+                    Produtos preparados especialmente para você.
+                  </small>
+                </div>
+              </article>
+
+              <article>
+                <span>✓</span>
+
+                <div>
+                  <b>Qualidade e cuidado</b>
+
+                  <small>
+                    Ingredientes escolhidos com atenção.
+                  </small>
+                </div>
+              </article>
+            </aside>
+          </section>
+
           {!storeSettingsLoading &&
             !storeAcceptsOrders && (
               <div className="orders-paused-notice">
@@ -1930,72 +2020,6 @@ export function ClientPortal({
               </div>
             </article> */}
           </div>
-
-          <section className="client-about-section">
-            <div className="client-about-content">
-              <p className="eyebrow">
-                SOBRE A FRIBOLOS
-              </p>
-
-              <h2>
-                Carinho em cada detalhe,
-                sabor em cada momento.
-              </h2>
-
-              <p>
-                A FriBolos nasceu do desejo de transformar
-                momentos especiais em lembranças ainda mais
-                doces. Cada encomenda é preparada de forma
-                artesanal, com ingredientes selecionados,
-                atenção aos detalhes e muito carinho.
-              </p>
-
-              <p>
-                Produzimos bolos, doces e encomendas
-                personalizadas para celebrar aniversários,
-                encontros, conquistas e todas as ocasiões que
-                merecem um sabor especial.
-              </p>
-            </div>
-
-            <aside className="client-about-values">
-              <article>
-                <span>♡</span>
-
-                <div>
-                  <b>Feito com carinho</b>
-
-                  <small>
-                    Cada encomenda recebe atenção especial.
-                  </small>
-                </div>
-              </article>
-
-              <article>
-                <span>♨</span>
-
-                <div>
-                  <b>Produção artesanal</b>
-
-                  <small>
-                    Produtos preparados especialmente para você.
-                  </small>
-                </div>
-              </article>
-
-              <article>
-                <span>✓</span>
-
-                <div>
-                  <b>Qualidade e cuidado</b>
-
-                  <small>
-                    Ingredientes escolhidos com atenção.
-                  </small>
-                </div>
-              </article>
-            </aside>
-          </section>
 
           <ClientReviewsCarousel />
         </>}
