@@ -1472,19 +1472,114 @@ export function ClientPortal({
   return (
     <main className="client-portal">
       <header className="client-header">
-        <div className="login-brand compact"><span>♨</span><strong>{storeName}</strong></div>
-        <nav>
-          <button className={section === "inicio" ? "active" : ""} onClick={() => setSection("inicio")}>Início</button>
-          <button className={section === "catalogo" ? "active" : ""} onClick={() => setSection("catalogo")}>Catálogo</button>
-          <button className={section === "pedidos" ? "active" : ""} onClick={() => setSection("pedidos")}>Meus pedidos</button>
-          <button className={section === "orcamentos" ? "active" : ""} onClick={() => setSection("orcamentos")}>Orçamentos</button>
-          <button className={section === "pagamento" ? "active" : ""} onClick={() => setSection("pagamento")}>Pagamento</button>
-          <button className={section === "avaliacao" ? "active" : ""} onClick={() => setSection("avaliacao")}>Avaliar</button>
-        </nav>
-        <div className="client-account">
+        <button
+          type="button"
+          className="client-header-brand"
+          onClick={() =>
+            setSection("inicio")
+          }
+          aria-label="Ir para o início"
+        >
+          <img
+            src="/FaviconFribolos.png"
+            alt=""
+          />
 
+          <div>
+            <strong>{storeName}</strong>
+
+            <small>
+              Confeitaria artesanal
+            </small>
+          </div>
+        </button>
+
+        <nav
+          className="client-primary-nav"
+          aria-label="Navegação principal"
+        >
+          <button
+            className={
+              section === "inicio"
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              setSection("inicio")
+            }
+          >
+            Início
+          </button>
+
+          <button
+            className={
+              section === "catalogo"
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              setSection("catalogo")
+            }
+          >
+            Catálogo
+          </button>
+
+          <button
+            className={
+              section === "pedidos"
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              setSection("pedidos")
+            }
+          >
+            Meus pedidos
+          </button>
+
+          <button
+            className={
+              section === "orcamentos"
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              setSection("orcamentos")
+            }
+          >
+            Orçamentos
+          </button>
+
+          <button
+            className={
+              section === "pagamento"
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              setSection("pagamento")
+            }
+          >
+            Pagamento
+          </button>
+
+          <button
+            className={
+              section === "avaliacao"
+                ? "active"
+                : ""
+            }
+            onClick={() =>
+              setSection("avaliacao")
+            }
+          >
+            Avaliar
+          </button>
+        </nav>
+
+        <div className="client-account">
           <ThemeToggle />
-          
+
           <button
             type="button"
             className="client-notification-button"
@@ -1493,27 +1588,197 @@ export function ClientPortal({
           >
             <span>♧</span>
 
-            {unreadNotificationsCount > 0 && (
+            {unreadNotificationsCount >
+              0 && (
               <b>
-                {unreadNotificationsCount > 99
+                {unreadNotificationsCount >
+                99
                   ? "99+"
                   : unreadNotificationsCount}
               </b>
             )}
           </button>
-          <button className="cart-trigger" onClick={() => setCartOpen(true)} aria-label={`Abrir carrinho com ${cartCount} itens`}><span>🛒</span><b>{cartCount}</b></button>
-          <span className="initials">
-            {getInitials(userName)}
-          </span>
-          <button onClick={() => setSection("perfil")}>
-            {userName}
+
+          <button
+            type="button"
+            className="cart-trigger"
+            onClick={() =>
+              setCartOpen(true)
+            }
+            aria-label={`Abrir carrinho com ${cartCount} itens`}
+          >
+            <span>🛒</span>
+
+            {cartCount > 0 && (
+              <b>{cartCount}</b>
+            )}
           </button>
-          <button onClick={onLogout} className="logout">Sair</button>
+
+          <details className="client-user-menu">
+            <summary>
+              <span className="initials">
+                {getInitials(userName)}
+              </span>
+
+              <span className="client-user-copy">
+                <strong>
+                  {getFirstName(userName)}
+                </strong>
+
+                <small>Minha conta</small>
+              </span>
+
+              <span className="client-user-arrow">
+                ⌄
+              </span>
+            </summary>
+
+            <div className="client-user-dropdown">
+              <div className="client-dropdown-heading">
+                <span className="initials">
+                  {getInitials(userName)}
+                </span>
+
+                <div>
+                  <strong>{userName}</strong>
+                  <small>Cliente FriBolos</small>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={event => {
+                  setSection("perfil");
+
+                  event.currentTarget
+                    .closest("details")
+                    ?.removeAttribute("open");
+                }}
+              >
+                <span>♙</span>
+                Meu perfil
+              </button>
+
+              <button
+                type="button"
+                className="client-dropdown-logout"
+                onClick={onLogout}
+              >
+                <span>↪</span>
+                Sair da conta
+              </button>
+            </div>
+          </details>
         </div>
       </header>
       <section className="client-main">
         {section === "inicio" && <>
-          <div className="client-welcome"><div><p className="eyebrow">OLÁ, {getFirstName(userName).toUpperCase()}</p><h1>Seus momentos doces,<br />sempre por perto.</h1><span>Acompanhe suas encomendas e fale com a confeitaria.</span></div><button  type="button"  disabled={    storeSettingsLoading ||    !storeAcceptsOrders  }  onClick={() => {    if (!storeAcceptsOrders) {      return;    }    setSection("novo");  }}>  {storeSettingsLoading    ? "Carregando..."    : storeAcceptsOrders      ? "＋ Fazer nova encomenda"      : "Encomendas pausadas"}</button></div>
+          <section className="client-home-hero">
+            <div className="client-hero-content">
+              <p className="eyebrow">
+                OLÁ,{" "}
+                {getFirstName(
+                  userName
+                ).toUpperCase()}
+              </p>
+
+              <h1>
+                Seus momentos doces,
+                <br />
+                sempre por perto.
+              </h1>
+
+              <p className="client-hero-description">
+                Encontre seus doces favoritos,
+                personalize sua encomenda e acompanhe
+                cada etapa com facilidade.
+              </p>
+
+              <div className="client-hero-actions">
+                <button
+                  type="button"
+                  className="client-hero-primary"
+                  disabled={
+                    storeSettingsLoading ||
+                    !storeAcceptsOrders
+                  }
+                  onClick={() => {
+                    if (!storeAcceptsOrders) {
+                      return;
+                    }
+
+                    setSection("novo");
+                  }}
+                >
+                  {storeSettingsLoading
+                    ? "Carregando..."
+                    : storeAcceptsOrders
+                      ? "Fazer nova encomenda"
+                      : "Encomendas pausadas"}
+
+                  <span>→</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="client-hero-secondary"
+                  onClick={() =>
+                    setSection("catalogo")
+                  }
+                >
+                  Ver catálogo
+                </button>
+              </div>
+
+              <div className="client-hero-benefits">
+                <span>
+                  <i>♡</i>
+                  Feito para você
+                </span>
+
+                <span>
+                  <i>♨</i>
+                  Produção artesanal
+                </span>
+
+                <span>
+                  <i>✓</i>
+                  Acompanhe seu pedido
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="client-hero-visual"
+              aria-hidden="true"
+            >
+              <div className="client-hero-image-ring">
+                <img
+                  src="/BoloDecorado.webp"
+                  alt=""
+                />
+              </div>
+
+              <div className="client-hero-floating-card">
+                <span>♡</span>
+
+                <div>
+                  <b>Feito com carinho</b>
+                  <small>
+                    Especial para você
+                  </small>
+                </div>
+              </div>
+
+              <span className="client-hero-spark spark-one">
+                ✦
+              </span>
+
+              <span className="client-hero-spark spark-two">
+                ✧
+              </span>
+            </div>
+          </section>
           {!storeSettingsLoading &&
             !storeAcceptsOrders && (
               <div className="orders-paused-notice">
