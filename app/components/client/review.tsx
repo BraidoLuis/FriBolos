@@ -10,7 +10,20 @@ import type {
   Product,
 } from "../../types";
 
-import { formatDeliveryDate } from "../../lib/formatters";
+import {
+  formatDeliveryDate,
+} from "../../lib/formatters";
+
+const ratingLabels: Record<
+  number,
+  string
+> = {
+  1: "Não gostei",
+  2: "Poderia melhorar",
+  3: "Foi uma boa experiência",
+  4: "Gostei muito",
+  5: "Foi perfeito!",
+};
 
 export function Review({
   orders,
@@ -40,50 +53,117 @@ export function Review({
     setSelectedOrderId,
   ] = useState("");
 
+  const [
+    hoveredRating,
+    setHoveredRating,
+  ] = useState(0);
+
+  const [
+    comment,
+    setComment,
+  ] = useState("");
+
   const selectedOrder =
     orders.find(
-      order => order.id === selectedOrderId
+      order =>
+        order.id === selectedOrderId
     ) ||
     orders[0] ||
     null;
 
+  const displayedRating =
+    hoveredRating || stars;
+
   if (reviewed) {
     return (
-      <div className="success-state review-success">
-        <span>★</span>
+      <section className="review-feedback-state review-feedback-success">
+        <div className="review-feedback-icon">
+          ★
+        </div>
 
-        <h1>Obrigado pela avaliação!</h1>
+        <p className="eyebrow">
+          AVALIAÇÃO ENVIADA
+        </p>
+
+        <h1>
+          Obrigado pela avaliação!
+        </h1>
 
         <p>
-          Sua opinião ajuda a confeitaria a tornar
-          cada experiência ainda mais especial.
+          Sua opinião ajuda a FriBolos a
+          preparar experiências cada vez mais
+          especiais, saborosas e cheias de
+          carinho.
         </p>
-      </div>
+
+        <div className="review-feedback-stars">
+          ★★★★★
+        </div>
+      </section>
     );
   }
 
   if (orders.length === 0) {
     return (
-      <>
-        <div className="client-page-title">
-          <p className="eyebrow">AVALIAÇÃO</p>
-          <h1>Como foi sua experiência?</h1>
+      <div className="client-review-page">
+        <div className="client-page-title review-page-title">
+          <div>
+            <p className="eyebrow">
+              AVALIAÇÃO
+            </p>
 
-          <span>
-            Avalie um pedido já concluído.
-          </span>
+            <h1>
+              Como foi sua experiência?
+            </h1>
+
+            <span>
+              Compartilhe sua opinião sobre
+              uma encomenda concluída.
+            </span>
+          </div>
+
+          <div
+            className="review-title-decoration"
+            aria-hidden="true"
+          >
+            ★
+          </div>
         </div>
 
-        <div className="empty-cart">
-          <span>★</span>
-          <h3>Nenhum pedido para avaliar</h3>
+        <section className="review-feedback-state review-feedback-empty">
+          <div className="review-feedback-icon">
+            ☆
+          </div>
+
+          <h2>
+            Nenhum pedido para avaliar
+          </h2>
 
           <p>
-            Quando um pedido for marcado como
-            entregue, ele ficará disponível aqui.
+            Quando uma encomenda for marcada
+            como entregue, ela aparecerá aqui
+            para que você possa contar como
+            foi sua experiência.
           </p>
-        </div>
-      </>
+
+          <div className="review-empty-steps">
+            <span>
+              <i>1</i>
+              Faça uma encomenda
+            </span>
+
+            <span>
+              <i>2</i>
+              Receba seu pedido
+            </span>
+
+            <span>
+              <i>3</i>
+              Compartilhe sua opinião
+            </span>
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -94,6 +174,13 @@ export function Review({
           `${item.quantity}× ${item.product_name}`
       )
       .join(", ") || "Pedido";
+
+  const totalOrderItems =
+    selectedOrder?.order_items.reduce(
+      (total, item) =>
+        total + Number(item.quantity),
+      0
+    ) || 0;
 
   const reviewProductImage =
     selectedOrder?.order_items
@@ -120,141 +207,361 @@ export function Review({
   ) {
     event.preventDefault();
 
-    if (!selectedOrder) {
+    if (
+      !selectedOrder ||
+      !stars ||
+      !comment.trim()
+    ) {
       return;
     }
 
-    const data = new FormData(
-      event.currentTarget
-    );
-
     await onSubmit(
       selectedOrder.id,
-      String(data.get("comment") || "")
+      comment.trim()
     );
   }
 
   return (
-    <>
-      <div className="client-page-title">
-        <p className="eyebrow">AVALIAÇÃO</p>
-        <h1>Como foi sua experiência?</h1>
+    <div className="client-review-page">
+      <div className="client-page-title review-page-title">
+        <div>
+          <p className="eyebrow">
+            SUA OPINIÃO IMPORTA
+          </p>
 
-        <span>
-          Avalie um pedido já concluído.
-        </span>
+          <h1>
+            Como foi sua experiência?
+          </h1>
+
+          <span>
+            Conte para nós o que tornou sua
+            encomenda especial.
+          </span>
+        </div>
+
+        <div
+          className="review-title-decoration"
+          aria-hidden="true"
+        >
+          ★
+        </div>
       </div>
 
       <form
-        className="panel review-card"
+        className="review-layout"
         onSubmit={submit}
       >
-        {orders.length > 1 && (
-          <label>
-            Escolha o pedido
-
-            <select
-              value={
-                selectedOrder?.id || ""
-              }
-              onChange={event => {
-                setSelectedOrderId(
-                  event.target.value
-                );
-
-                setStars(0);
-              }}
-            >
-              {orders.map(order => (
-                <option
-                  key={order.id}
-                  value={order.id}
-                >
-                  Pedido #{order.order_number}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        {selectedOrder && (
-          <div className="review-product">
-            {reviewProductImage ? (
-              <img
-                src={reviewProductImage}
-                alt={orderDescription}
-              />
-            ) : (
-              <span>🥧</span>
-            )}
+        <aside className="review-order-column">
+          <div className="review-section-heading">
+            <span>1</span>
 
             <div>
               <small>
-                PEDIDO #{selectedOrder.order_number}
+                SUA ENCOMENDA
               </small>
 
-              <h2>{orderDescription}</h2>
-
-              <p>
-                Entregue em{" "}
-                {formatDeliveryDate(
-                  selectedOrder.delivery_date
-                )}
-              </p>
+              <h2>
+                Pedido avaliado
+              </h2>
             </div>
           </div>
-        )}
 
-        <label>
-          Sua nota
+          {orders.length > 1 && (
+            <label className="review-order-selector">
+              Escolha o pedido
 
-          <div className="stars">
-            {[1, 2, 3, 4, 5].map(rating => (
+              <select
+                value={
+                  selectedOrder?.id || ""
+                }
+                onChange={event => {
+                  setSelectedOrderId(
+                    event.target.value
+                  );
+
+                  setStars(0);
+                  setHoveredRating(0);
+                  setComment("");
+                }}
+              >
+                {orders.map(order => (
+                  <option
+                    key={order.id}
+                    value={order.id}
+                  >
+                    Pedido #
+                    {order.order_number}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {selectedOrder && (
+            <article className="review-product-card">
+              <div className="review-product-image">
+                {reviewProductImage ? (
+                  <img
+                    src={
+                      reviewProductImage
+                    }
+                    alt={
+                      orderDescription
+                    }
+                  />
+                ) : (
+                  <span>🧁</span>
+                )}
+              </div>
+
+              <div className="review-product-information">
+                <span className="review-order-number">
+                  PEDIDO #
+                  {
+                    selectedOrder.order_number
+                  }
+                </span>
+
+                <h2>
+                  {orderDescription}
+                </h2>
+
+                <p>
+                  Entregue em{" "}
+                  {formatDeliveryDate(
+                    selectedOrder.delivery_date
+                  )}
+                </p>
+
+                <div className="review-order-summary">
+                  <span>
+                    <b>
+                      {totalOrderItems}
+                    </b>
+
+                    {totalOrderItems === 1
+                      ? " item"
+                      : " itens"}
+                  </span>
+
+                  <span>
+                    <b>✓</b>
+                    Pedido entregue
+                  </span>
+                </div>
+              </div>
+            </article>
+          )}
+
+          <div className="review-order-message">
+            <span>♡</span>
+
+            <p>
+              Cada comentário nos ajuda a
+              aperfeiçoar receitas, atendimento
+              e apresentação.
+            </p>
+          </div>
+        </aside>
+
+        <section className="review-form-column">
+          <div className="review-section-heading">
+            <span>2</span>
+
+            <div>
+              <small>
+                CONTE PARA NÓS
+              </small>
+
+              <h2>
+                Avalie sua experiência
+              </h2>
+            </div>
+          </div>
+
+          <fieldset className="review-rating-field">
+            <legend>
+              Qual nota você daria?
+            </legend>
+
+            <div
+              className="review-stars"
+              onMouseLeave={() =>
+                setHoveredRating(0)
+              }
+            >
+              {[1, 2, 3, 4, 5].map(
+                rating => (
+                  <button
+                    type="button"
+                    key={rating}
+                    className={
+                      rating <=
+                      displayedRating
+                        ? "selected"
+                        : ""
+                    }
+                    onMouseEnter={() =>
+                      setHoveredRating(
+                        rating
+                      )
+                    }
+                    onFocus={() =>
+                      setHoveredRating(
+                        rating
+                      )
+                    }
+                    onBlur={() =>
+                      setHoveredRating(0)
+                    }
+                    onClick={() =>
+                      setStars(rating)
+                    }
+                    aria-label={`${rating} ${
+                      rating === 1
+                        ? "estrela"
+                        : "estrelas"
+                    }`}
+                    aria-pressed={
+                      stars === rating
+                    }
+                  >
+                    ★
+                  </button>
+                )
+              )}
+            </div>
+
+            <div
+              className={[
+                "review-rating-label",
+                displayedRating
+                  ? "visible"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {displayedRating
+                ? ratingLabels[
+                    displayedRating
+                  ]
+                : "Selecione de 1 a 5 estrelas"}
+            </div>
+          </fieldset>
+
+          <label className="review-comment-field">
+            <span>
+              <b>Conte como foi</b>
+
+              <small>
+                {comment.length}/2000
+              </small>
+            </span>
+
+            <textarea
+              required
+              minLength={3}
+              maxLength={2000}
+              name="comment"
+              value={comment}
+              onChange={event =>
+                setComment(
+                  event.target.value
+                )
+              }
+              placeholder="Conte sobre o sabor, a apresentação, o atendimento e o que mais chamou sua atenção..."
+            />
+          </label>
+
+          <div className="review-suggestions">
+            <span>
+              Você pode comentar sobre:
+            </span>
+
+            <div>
               <button
                 type="button"
-                key={rating}
-                className={
-                  rating <= stars
-                    ? "selected"
-                    : ""
-                }
                 onClick={() =>
-                  setStars(rating)
+                  setComment(current =>
+                    current ||
+                    "O sabor estava "
+                  )
                 }
-                aria-label={`${rating} estrelas`}
               >
-                ★
+                Sabor
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setComment(current =>
+                    current ||
+                    "A apresentação estava "
+                  )
+                }
+              >
+                Apresentação
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setComment(current =>
+                    current ||
+                    "O atendimento foi "
+                  )
+                }
+              >
+                Atendimento
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setComment(current =>
+                    current ||
+                    "A entrega foi "
+                  )
+                }
+              >
+                Entrega
+              </button>
+            </div>
           </div>
-        </label>
 
-        <label>
-          Conte como foi
+          {error && (
+            <p className="form-error review-form-error">
+              <span>!</span>
+              {error}
+            </p>
+          )}
 
-          <textarea
-            required
-            maxLength={2000}
-            name="comment"
-            placeholder="Sabor, apresentação, atendimento..."
-          />
-        </label>
+          <button
+            type="submit"
+            className="review-submit"
+            disabled={
+              !stars ||
+              comment.trim().length < 3 ||
+              loading
+            }
+          >
+            <span>
+              {loading
+                ? "Enviando avaliação..."
+                : "Enviar minha avaliação"}
+            </span>
 
-        {error && (
-          <p className="form-error">
-            {error}
+            {!loading && <b>→</b>}
+          </button>
+
+          <p className="review-privacy">
+            Sua avaliação poderá ser exibida
+            publicamente, sem divulgar seus
+            dados pessoais.
           </p>
-        )}
-
-        <button
-          className="primary"
-          disabled={!stars || loading}
-        >
-          {loading
-            ? "Enviando avaliação..."
-            : "Enviar avaliação"}
-        </button>
+        </section>
       </form>
-    </>
+    </div>
   );
 }

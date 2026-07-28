@@ -418,11 +418,6 @@ export function Login({
 
         {isClient && (
           <div className="login-sweets-gallery">
-            <div className="login-gallery-label">
-              <span>✦</span>
-              Inspirações FriBolos
-            </div>
-
             <figure className="login-sweet-main">
               <img
                 src="/BoloDecorado.webp"
