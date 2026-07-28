@@ -168,6 +168,8 @@ export function Payment({
       : "Horário a confirmar";
 
   const today = new Date();
+  
+  const checkoutItems = cart;
 
   const minimumDate = [
     today.getFullYear(),
@@ -181,565 +183,980 @@ export function Payment({
     ),
   ].join("-");
 
-async function confirmOrder() {
-  setPaymentError("");
+  const minimumOrderProgress =
+    minimumOrderValue > 0
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            (
+              subtotal /
+              minimumOrderValue
+            ) * 100
+          )
+        )
+      : 100;
 
-  if (!acceptsOrders) {
-    setPaymentError(
-      "A confeitaria não está aceitando novos pedidos no momento."
-    );
+  const totalItems =
+    checkoutItems?.reduce(
+      (sum, item) =>
+        sum + item.quantity,
+      0
+    ) || 0;
 
-    return;
-  }
+  async function confirmOrder() {
+    setPaymentError("");
 
-  if (
-    minimumOrderValue > 0 &&
-    subtotal < minimumOrderValue
-  ) {
-    setPaymentError(
-      `O pedido mínimo é de ${money(
-        minimumOrderValue
-      )}.`
-    );
-
-    return;
-  }
-
-  if (
-    fulfillmentType === "delivery" &&
-    deliveryAddress.trim().length < 5
-  ) {
-    setPaymentError(
-      "Informe o endereço para entrega."
-    );
-
-    return;
-  }
-
-  if (!deliveryDate) {
-    setPaymentError(
-      "Selecione a data desejada."
-    );
-
-    return;
-  }
-
-  if (deliveryDate < minimumDate) {
-    setPaymentError(
-      "A data do pedido não pode estar no passado."
-    );
-
-    return;
-  }
-
-  const selectedDate = new Date(
-    `${deliveryDate}T12:00:00`
-  );
-
-  const selectedWeekday =
-    selectedDate.getDay();
-
-  if (
-    businessWeekdays.length > 0 &&
-    !businessWeekdays.includes(
-      selectedWeekday
-    )
-  ) {
-    setPaymentError(
-      "A confeitaria não funciona na data selecionada."
-    );
-
-    return;
-  }
-
-  if (!deliveryTime) {
-    setPaymentError(
-      "Selecione o horário preferido."
-    );
-
-    return;
-  }
-
-  const selectedTime =
-    deliveryTime.slice(0, 5);
-
-  if (
-    formattedOpeningTime &&
-    selectedTime < formattedOpeningTime
-  ) {
-    setPaymentError(
-      `Selecione um horário a partir das ${formattedOpeningTime}.`
-    );
-
-    return;
-  }
-
-  if (
-    formattedClosingTime &&
-    selectedTime > formattedClosingTime
-  ) {
-    setPaymentError(
-      `Selecione um horário até as ${formattedClosingTime}.`
-    );
-
-    return;
-  }
-
-  setProcessing(true);
-
-  try {
-    const savedPendingOrderId =
-      sessionStorage.getItem(
-        "stripe-checkout-order-id"
+    if (!acceptsOrders) {
+      setPaymentError(
+        "A confeitaria não está aceitando novos pedidos no momento."
       );
 
-    let order =
-      pendingOrder &&
-      savedPendingOrderId === pendingOrder.id
-        ? pendingOrder
-        : null;
+      return;
+    }
 
-    if (!order) {
-      const result = await onPay({
-        fulfillmentType,
-        deliveryAddress:
-          deliveryAddress.trim(),
-        deliveryDate,
-        deliveryTime,
-      });
+    if (
+      minimumOrderValue > 0 &&
+      subtotal < minimumOrderValue
+    ) {
+      setPaymentError(
+        `O pedido mínimo é de ${money(
+          minimumOrderValue
+        )}.`
+      );
 
-      if (!result.success) {
-        setPaymentError(result.message);
+      return;
+    }
+
+    if (
+      fulfillmentType === "delivery" &&
+      deliveryAddress.trim().length < 5
+    ) {
+      setPaymentError(
+        "Informe o endereço para entrega."
+      );
+
+      return;
+    }
+
+    if (!deliveryDate) {
+      setPaymentError(
+        "Selecione a data desejada."
+      );
+
+      return;
+    }
+
+    if (deliveryDate < minimumDate) {
+      setPaymentError(
+        "A data do pedido não pode estar no passado."
+      );
+
+      return;
+    }
+
+    const selectedDate = new Date(
+      `${deliveryDate}T12:00:00`
+    );
+
+    const selectedWeekday =
+      selectedDate.getDay();
+
+    if (
+      businessWeekdays.length > 0 &&
+      !businessWeekdays.includes(
+        selectedWeekday
+      )
+    ) {
+      setPaymentError(
+        "A confeitaria não funciona na data selecionada."
+      );
+
+      return;
+    }
+
+    if (!deliveryTime) {
+      setPaymentError(
+        "Selecione o horário preferido."
+      );
+
+      return;
+    }
+
+    const selectedTime =
+      deliveryTime.slice(0, 5);
+
+    if (
+      formattedOpeningTime &&
+      selectedTime < formattedOpeningTime
+    ) {
+      setPaymentError(
+        `Selecione um horário a partir das ${formattedOpeningTime}.`
+      );
+
+      return;
+    }
+
+    if (
+      formattedClosingTime &&
+      selectedTime > formattedClosingTime
+    ) {
+      setPaymentError(
+        `Selecione um horário até as ${formattedClosingTime}.`
+      );
+
+      return;
+    }
+
+    setProcessing(true);
+
+    try {
+      const savedPendingOrderId =
+        sessionStorage.getItem(
+          "stripe-checkout-order-id"
+        );
+
+      let order =
+        pendingOrder &&
+        savedPendingOrderId === pendingOrder.id
+          ? pendingOrder
+          : null;
+
+      if (!order) {
+        const result = await onPay({
+          fulfillmentType,
+          deliveryAddress:
+            deliveryAddress.trim(),
+          deliveryDate,
+          deliveryTime,
+        });
+
+        if (!result.success) {
+          setPaymentError(result.message);
+          return;
+        }
+
+        order = {
+          id: result.orderId,
+          number: result.orderNumber,
+        };
+
+        setPendingOrder(order);
+
+      }
+
+      const {
+        data,
+        error: checkoutError,
+      } = await supabase.functions.invoke(
+        "create-stripe-checkout",
+        {
+          body: {
+            orderId: order.id,
+          },
+        }
+      );
+
+      if (checkoutError) {
+        let errorMessage =
+          "Não foi possível abrir o pagamento seguro.";
+
+        try {
+          const errorContext =
+            (
+              checkoutError as {
+                context?: Response;
+              }
+            ).context;
+
+          if (errorContext) {
+            const errorBody =
+              await errorContext.clone().json();
+
+            console.error(
+              "Resposta da Edge Function:",
+              errorBody
+            );
+
+            if (errorBody?.error) {
+              errorMessage =
+                errorBody.error;
+            }
+          }
+        } catch (contextError) {
+          console.error(
+            "Não foi possível ler a resposta da função:",
+            contextError
+          );
+        }
+
+        console.error(
+          "Erro ao iniciar Checkout:",
+          checkoutError
+        );
+
+        setPaymentError(errorMessage);
         return;
       }
 
-      order = {
-        id: result.orderId,
-        number: result.orderNumber,
-      };
+      const checkoutUrl =
+        data?.url as string | undefined;
 
-      setPendingOrder(order);
-
-    }
-
-    const {
-      data,
-      error: checkoutError,
-    } = await supabase.functions.invoke(
-      "create-stripe-checkout",
-      {
-        body: {
-          orderId: order.id,
-        },
-      }
-    );
-
-    if (checkoutError) {
-      let errorMessage =
-        "Não foi possível abrir o pagamento seguro.";
-
-      try {
-        const errorContext =
-          (
-            checkoutError as {
-              context?: Response;
-            }
-          ).context;
-
-        if (errorContext) {
-          const errorBody =
-            await errorContext.clone().json();
-
-          console.error(
-            "Resposta da Edge Function:",
-            errorBody
-          );
-
-          if (errorBody?.error) {
-            errorMessage =
-              errorBody.error;
-          }
-        }
-      } catch (contextError) {
+      if (!checkoutUrl) {
         console.error(
-          "Não foi possível ler a resposta da função:",
-          contextError
+          "URL do Checkout não recebida:",
+          data
         );
-      }
 
-      console.error(
-        "Erro ao iniciar Checkout:",
-        checkoutError
+        setPaymentError(
+          data?.error ||
+            "A Stripe não retornou a página de pagamento."
+        );
+
+        return;
+      }
+      sessionStorage.setItem(
+        "stripe-checkout-cart",
+        JSON.stringify(cart)
       );
 
-      setPaymentError(errorMessage);
-      return;
-    }
+      sessionStorage.setItem(
+        "stripe-checkout-order-number",
+        String(order.number)
+      );
 
-    const checkoutUrl =
-      data?.url as string | undefined;
+      sessionStorage.setItem(
+        "stripe-checkout-order-id",
+        order.id
+      );
 
-    if (!checkoutUrl) {
+      window.location.assign(checkoutUrl);
+    } catch (error) {
       console.error(
-        "URL do Checkout não recebida:",
-        data
+        "Erro inesperado no pagamento:",
+        error
       );
 
       setPaymentError(
-        data?.error ||
-          "A Stripe não retornou a página de pagamento."
+        "Ocorreu um erro ao iniciar o pagamento."
       );
-
-      return;
+    } finally {
+      setProcessing(false);
     }
-    sessionStorage.setItem(
-      "stripe-checkout-cart",
-      JSON.stringify(cart)
-    );
-
-    sessionStorage.setItem(
-      "stripe-checkout-order-number",
-      String(order.number)
-    );
-
-    sessionStorage.setItem(
-      "stripe-checkout-order-id",
-      order.id
-    );
-
-    window.location.assign(checkoutUrl);
-  } catch (error) {
-    console.error(
-      "Erro inesperado no pagamento:",
-      error
-    );
-
-    setPaymentError(
-      "Ocorreu um erro ao iniciar o pagamento."
-    );
-  } finally {
-    setProcessing(false);
   }
-}
+
   if (returning) {
     return (
-      <div className="success-state">
-        <span>⌛</span>
+      <section className="payment-feedback-state processing">
+        <div className="payment-feedback-icon">
+          <span>◷</span>
+          <i />
+        </div>
 
-        <h1>Confirmando pagamento...</h1>
+        <p className="eyebrow">
+          PAGAMENTO SEGURO
+        </p>
+
+        <h1>
+          Confirmando seu pagamento...
+        </h1>
 
         <p>
           Recebemos o retorno da Stripe e estamos
-          confirmando o pagamento do seu pedido.
+          validando o pagamento do seu pedido. Isso
+          deve levar apenas alguns instantes.
         </p>
-      </div>
+
+        <div className="payment-feedback-progress">
+          <span />
+        </div>
+
+        <small>
+          Não feche nem atualize esta página.
+        </small>
+      </section>
     );
   }
 
-  const checkoutItems = cart;
-  if (!paid && checkoutItems.length === 0) {
+  if (
+    !paid &&
+    checkoutItems.length === 0
+  ) {
     return (
-      <div className="empty-cart">
-        <span>🧁</span>
+      <section className="payment-feedback-state empty">
+        <div className="payment-feedback-icon">
+          <span>🧁</span>
+        </div>
 
-        <h3>Nenhum produto selecionado</h3>
+        <p className="eyebrow">
+          SEU CARRINHO ESTÁ VAZIO
+        </p>
+
+        <h1>
+          Nenhum produto selecionado
+        </h1>
 
         <p>
-          Adicione produtos ao carrinho antes de realizar
-          o pagamento.
+          Adicione produtos ao carrinho antes de
+          continuar para o pagamento da sua
+          encomenda.
         </p>
-      </div>
+      </section>
     );
   }
 
   if (paid) {
     return (
-      <div className="success-state">
-        <span>✓</span>
+      <section className="payment-feedback-state success">
+        <div className="payment-feedback-icon">
+          <span>✓</span>
+        </div>
 
-        <h1>Pagamento confirmado!</h1>
+        <p className="eyebrow">
+          PAGAMENTO APROVADO
+        </p>
+
+        <h1>
+          Sua encomenda está confirmada!
+        </h1>
 
         {confirmedOrderNumber && (
-          <strong>
-            Pedido #{confirmedOrderNumber}
-          </strong>
+          <div className="confirmed-order-number">
+            <small>
+              NÚMERO DO PEDIDO
+            </small>
+
+            <strong>
+              #{confirmedOrderNumber}
+            </strong>
+          </div>
         )}
 
         <p>
-          {checkoutItems.length > 0 ? (
-            <>
-              Seu pedido com{" "}
-              {checkoutItems.reduce(
-                (sum, item) =>
-                  sum + item.quantity,
-                0
-              )}{" "}
-              {checkoutItems.reduce(
-                (sum, item) =>
-                  sum + item.quantity,
-                0
-              ) === 1
-                ? "item"
-                : "itens"}{" "}
-              foi recebido. A confeitaria já pode
-              acompanhar a encomenda.
-            </>
-          ) : (
-            <>
-              Seu pagamento foi confirmado e o pedido
-              já está disponível para a confeitaria.
-            </>
-          )}
+          {checkoutItems.length > 0
+            ? `Seu pedido com ${totalItems} ${
+                totalItems === 1
+                  ? "item foi recebido"
+                  : "itens foi recebido"
+              }. A confeitaria já pode acompanhar e preparar sua encomenda.`
+            : "Seu pagamento foi confirmado e o pedido já está disponível para a confeitaria."}
         </p>
 
         <Status>Confirmado</Status>
 
-        <div className="payment-success-actions">
-          <button
-            type="button"
-            className="primary"
-            onClick={onViewOrders}
-          >
-            Ver meus pedidos
-          </button>
+        <div className="payment-success-information">
+          <article>
+            <span>✓</span>
+
+            <div>
+              <b>Pagamento confirmado</b>
+
+              <small>
+                Transação processada com segurança
+              </small>
+            </div>
+          </article>
+
+          <article>
+            <span>♨</span>
+
+            <div>
+              <b>Pedido enviado</b>
+
+              <small>
+                A confeitaria recebeu sua encomenda
+              </small>
+            </div>
+          </article>
+
+          <article>
+            <span>▢</span>
+
+            <div>
+              <b>Acompanhe pelo sistema</b>
+
+              <small>
+                Consulte todas as atualizações
+              </small>
+            </div>
+          </article>
         </div>
-      </div>
+
+        <button
+          type="button"
+          className="payment-view-orders"
+          onClick={onViewOrders}
+        >
+          Ver meus pedidos
+          <span>→</span>
+        </button>
+      </section>
     );
   }
-  
+
   return (
-    <>
-      <div className="client-page-title"><p className="eyebrow">PAGAMENTO</p><h1>Finalize sua encomenda</h1><span>Revise todos os itens e escolha a forma de pagamento.</span></div>
-      <div className="payment-layout">
-        <section className="panel payment-card">
-          <h2>Forma de recebimento</h2>
+    <div className="client-payment-page">
+      <header className="payment-page-hero">
+        <div>
+          <p className="eyebrow">
+            FINALIZAÇÃO SEGURA
+          </p>
 
-          <div className="fulfillment-options">
-            <button
-              type="button"
-              className={
-                fulfillmentType === "pickup"
-                  ? "selected"
-                  : ""
-              }
-              onClick={() => {
-                setFulfillmentType("pickup");
-                setPaymentError("");
-              }}
-            >
-              <span>⌂</span>
+          <h1>
+            Finalize sua encomenda
+          </h1>
 
-              <div>
-                <strong>Retirada no local</strong>
-                <small>Sem taxa de entrega</small>
-              </div>
-            </button>
+          <p>
+            Confira seus produtos, escolha como deseja
+            receber e informe a melhor data para sua
+            encomenda.
+          </p>
+        </div>
 
-            <button
-              type="button"
-              className={
-                fulfillmentType === "delivery"
-                  ? "selected"
-                  : ""
-              }
-              onClick={() => {
-                setFulfillmentType("delivery");
-                setPaymentError("");
-              }}
-            >
-              <span>▣</span>
+        <div className="payment-hero-security">
+          <span>⌑</span>
 
-              <div>
-                <strong>Receber em casa</strong>
+          <div>
+            <b>Pagamento protegido</b>
 
-                <small>
-                  Taxa de {money(deliveryFee)}
-                </small>
-              </div>
-            </button>
+            <small>
+              Processado pela Stripe
+            </small>
           </div>
+        </div>
+      </header>
 
-          {fulfillmentType === "pickup" && (
-            <div className="pickup-information">
-              <span>⌂</span>
+      <nav
+        className="payment-steps"
+        aria-label="Etapas da finalização"
+      >
+        <article className="completed">
+          <span>✓</span>
+
+          <div>
+            <small>ETAPA 1</small>
+            <b>Produtos</b>
+          </div>
+        </article>
+
+        <i />
+
+        <article className="active">
+          <span>2</span>
+
+          <div>
+            <small>ETAPA 2</small>
+            <b>Recebimento</b>
+          </div>
+        </article>
+
+        <i />
+
+        <article>
+          <span>3</span>
+
+          <div>
+            <small>ETAPA 3</small>
+            <b>Pagamento</b>
+          </div>
+        </article>
+      </nav>
+
+      {!acceptsOrders && (
+        <div className="payment-orders-paused">
+          <span>◷</span>
+
+          <div>
+            <b>
+              Novas encomendas estão pausadas
+            </b>
+
+            <p>
+              A confeitaria não está aceitando novos
+              pedidos neste momento.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="payment-layout">
+        <main className="payment-checkout">
+          <section className="payment-section-card">
+            <header className="payment-section-heading">
+              <span>1</span>
 
               <div>
-                <strong>Retirada na confeitaria</strong>
-
-                <p>
-                  {pickupAddress ||
-                    "Endereço de retirada a confirmar"}
-                </p>
-
                 <small>
-                  {businessDays ||
-                    "Dias de funcionamento a confirmar"}
-                  {" • "}
-                  {storeHours}
+                  COMO VOCÊ QUER RECEBER?
                 </small>
-              </div>
-            </div>
-          )}
 
-          <div className="delivery-fields">
-            {fulfillmentType === "delivery" && (
-              <label className="wide">
-                Endereço para entrega
+                <h2>
+                  Forma de recebimento
+                </h2>
+              </div>
+            </header>
+
+            <div className="fulfillment-options">
+              <button
+                type="button"
+                className={
+                  fulfillmentType ===
+                  "pickup"
+                    ? "selected"
+                    : ""
+                }
+                onClick={() => {
+                  setFulfillmentType(
+                    "pickup"
+                  );
+
+                  setPaymentError("");
+                }}
+              >
+                <span>⌂</span>
+
+                <div>
+                  <strong>
+                    Retirada no local
+                  </strong>
+
+                  <small>
+                    Sem taxa de entrega
+                  </small>
+                </div>
+
+                <i>
+                  {fulfillmentType ===
+                  "pickup"
+                    ? "✓"
+                    : ""}
+                </i>
+              </button>
+
+              <button
+                type="button"
+                className={
+                  fulfillmentType ===
+                  "delivery"
+                    ? "selected"
+                    : ""
+                }
+                onClick={() => {
+                  setFulfillmentType(
+                    "delivery"
+                  );
+
+                  setPaymentError("");
+                }}
+              >
+                <span>▣</span>
+
+                <div>
+                  <strong>
+                    Receber em casa
+                  </strong>
+
+                  <small>
+                    Taxa de{" "}
+                    {money(deliveryFee)}
+                  </small>
+                </div>
+
+                <i>
+                  {fulfillmentType ===
+                  "delivery"
+                    ? "✓"
+                    : ""}
+                </i>
+              </button>
+            </div>
+
+            {fulfillmentType ===
+              "pickup" && (
+              <div className="pickup-information">
+                <span>⌂</span>
+
+                <div>
+                  <small>
+                    LOCAL DE RETIRADA
+                  </small>
+
+                  <strong>
+                    Retirada na confeitaria
+                  </strong>
+
+                  <p>
+                    {pickupAddress ||
+                      "Endereço de retirada a confirmar"}
+                  </p>
+
+                  <span>
+                    {businessDays ||
+                      "Dias de funcionamento a confirmar"}
+
+                    {" • "}
+
+                    {storeHours}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {fulfillmentType ===
+              "delivery" && (
+              <div className="delivery-address-field">
+                <label>
+                  <span>
+                    Endereço para entrega
+                  </span>
+
+                  <div>
+                    <i>⌖</i>
+
+                    <input
+                      required
+                      value={
+                        deliveryAddress
+                      }
+                      onChange={event => {
+                        setDeliveryAddress(
+                          event.target.value
+                        );
+
+                        setPaymentError("");
+                      }}
+                      placeholder="Rua, número, bairro e complemento"
+                    />
+                  </div>
+                </label>
+              </div>
+            )}
+          </section>
+
+          <section className="payment-section-card">
+            <header className="payment-section-heading">
+              <span>2</span>
+
+              <div>
+                <small>
+                  QUANDO DEVEMOS PREPARAR?
+                </small>
+
+                <h2>
+                  Data e horário
+                </h2>
+              </div>
+            </header>
+
+            <div className="delivery-fields">
+              <label>
+                Data desejada
 
                 <input
                   required
-                  value={deliveryAddress}
-                  onChange={event =>
-                    setDeliveryAddress(
+                  type="date"
+                  min={minimumDate}
+                  value={deliveryDate}
+                  onChange={event => {
+                    setDeliveryDate(
                       event.target.value
-                    )
-                  }
-                  placeholder="Rua, número, bairro e complemento"
+                    );
+
+                    setPaymentError("");
+                  }}
                 />
               </label>
-            )}
 
-            <label>
-              Data desejada
+              <label>
+                Horário preferido
 
-              <input
-                required
-                type="date"
-                min={minimumDate}
-                value={deliveryDate}
-                onChange={event => {
-                  setDeliveryDate(
-                    event.target.value
-                  );
+                <input
+                  required
+                  type="time"
+                  min={
+                    formattedOpeningTime ||
+                    undefined
+                  }
+                  max={
+                    formattedClosingTime ||
+                    undefined
+                  }
+                  value={deliveryTime}
+                  onChange={event => {
+                    setDeliveryTime(
+                      event.target.value
+                    );
 
-                  setPaymentError("");
-                }}
-              />
-            </label>
+                    setPaymentError("");
+                  }}
+                />
+              </label>
+            </div>
 
-            <label>
-              Horário preferido
+            <div className="payment-schedule-information">
+              <span>◷</span>
 
-              <input
-                required
-                type="time"
-                min={
-                  formattedOpeningTime ||
-                  undefined
-                }
-                max={
-                  formattedClosingTime ||
-                  undefined
-                }
-                value={deliveryTime}
-                onChange={event => {
-                  setDeliveryTime(
-                    event.target.value
-                  );
-
-                  setPaymentError("");
-                }}
-              />
-            </label>
-          </div>
+              <p>
+                Atendimento em{" "}
+                <b>
+                  {businessDays ||
+                    "dias a confirmar"}
+                </b>
+                , das{" "}
+                <b>{storeHours}</b>.
+              </p>
+            </div>
+          </section>
 
           {minimumOrderValue > 0 && (
-            <div
-              className={`minimum-order-notice ${
-                subtotal >= minimumOrderValue
+            <section
+              className={`payment-minimum-card ${
+                subtotal >=
+                minimumOrderValue
                   ? "reached"
                   : ""
               }`}
             >
+              <div>
+                <span>
+                  {subtotal >=
+                  minimumOrderValue
+                    ? "✓"
+                    : "!"}
+                </span>
+
+                <div>
+                  <b>
+                    {subtotal >=
+                    minimumOrderValue
+                      ? "Valor mínimo atingido"
+                      : "Pedido mínimo ainda não atingido"}
+                  </b>
+
+                  <p>
+                    {subtotal >=
+                    minimumOrderValue
+                      ? "Sua encomenda já pode ser finalizada."
+                      : `Adicione mais ${money(
+                          minimumOrderValue -
+                            subtotal
+                        )} para continuar.`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="payment-minimum-progress">
+                <span
+                  style={{
+                    width: `${minimumOrderProgress}%`,
+                  }}
+                />
+              </div>
+            </section>
+          )}
+
+          <section className="payment-section-card">
+            <header className="payment-section-heading">
+              <span>3</span>
+
+              <div>
+                <small>
+                  AMBIENTE PROTEGIDO
+                </small>
+
+                <h2>
+                  Forma de pagamento
+                </h2>
+              </div>
+            </header>
+
+            <div className="stripe-checkout-note">
+              <span>⌑</span>
+
+              <div>
+                <b>
+                  Pagamento seguro pela Stripe
+                </b>
+
+                <p>
+                  Você será direcionado para o ambiente
+                  protegido da Stripe, onde poderá
+                  consultar e selecionar as formas de
+                  pagamento disponíveis.
+                </p>
+              </div>
+
+              <strong>
+                STRIPE
+              </strong>
+            </div>
+
+            {(paymentError ||
+              returnError) && (
+              <div
+                className="payment-error-message"
+                role="alert"
+              >
+                <span>!</span>
+
+                <p>
+                  {paymentError ||
+                    returnError}
+                </p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="confirm-payment"
+              disabled={
+                processing ||
+                !acceptsOrders
+              }
+              onClick={confirmOrder}
+            >
               <span>
-                {subtotal >= minimumOrderValue
-                  ? "✓"
-                  : "!"}
+                {processing
+                  ? "Abrindo ambiente seguro..."
+                  : `Pagar ${money(
+                      checkoutTotal
+                    )}`}
               </span>
 
-              <p>
-                {subtotal >= minimumOrderValue
-                  ? "O valor mínimo do pedido foi atingido."
-                  : `O pedido mínimo é de ${money(
-                      minimumOrderValue
-                    )}. Faltam ${money(
-                      minimumOrderValue -
-                        subtotal
-                    )}.`}
-              </p>
+              <b>
+                {processing
+                  ? "◷"
+                  : "→"}
+              </b>
+            </button>
+
+            <div className="payment-security-list">
+              <span>
+                ✓ Dados protegidos
+              </span>
+
+              <span>
+                ✓ Ambiente seguro
+              </span>
+
+              <span>
+                ✓ Confirmação automática
+              </span>
             </div>
-          )}
+          </section>
+        </main>
 
-          <h2 className="payment-method-title">
-            Forma de pagamento
-          </h2>
+        <aside className="payment-order-summary">
+          <header>
+            <div>
+              <p className="eyebrow">
+                SUA ENCOMENDA
+              </p>
 
-          <div className="stripe-checkout-note">
-            <span>⌑</span>
+              <h2>
+                Resumo do pedido
+              </h2>
+            </div>
+
+            <span>
+              {totalItems}{" "}
+              {totalItems === 1
+                ? "item"
+                : "itens"}
+            </span>
+          </header>
+
+          <div className="payment-summary-items">
+            {checkoutItems.map(item => (
+              <article
+                key={item.product.id}
+              >
+                <div className="payment-summary-image">
+                  {item.product.image ? (
+                    <img
+                      src={
+                        item.product.image
+                      }
+                      alt={
+                        item.product.name
+                      }
+                    />
+                  ) : (
+                    <span>🍰</span>
+                  )}
+
+                  <b>
+                    {item.quantity}
+                  </b>
+                </div>
+
+                <div>
+                  <strong>
+                    {item.product.name}
+                  </strong>
+
+                  <small>
+                    {item.quantity} ×{" "}
+                    {item.product.price}
+                  </small>
+                </div>
+
+                <span>
+                  {money(
+                    priceNumber(
+                      item.product.price
+                    ) * item.quantity
+                  )}
+                </span>
+              </article>
+            ))}
+          </div>
+
+          <div className="payment-summary-values">
+            <div>
+              <span>Subtotal</span>
+
+              <b>{money(subtotal)}</b>
+            </div>
 
             <div>
-              <b>Pagamento seguro pela Stripe</b>
+              <span>
+                {fulfillmentType ===
+                "delivery"
+                  ? "Taxa de entrega"
+                  : "Retirada no local"}
+              </span>
 
-              <p>
-                Na próxima página você poderá escolher
-                as formas de pagamento disponíveis.
-                Os dados financeiros serão informados
-                diretamente no ambiente da Stripe.
-              </p>
+              <b>
+                {fulfillmentType ===
+                "delivery"
+                  ? money(
+                      appliedDeliveryFee
+                    )
+                  : "Grátis"}
+              </b>
             </div>
           </div>
-          <button
-            type="button"
-            className="confirm-payment"
-            disabled={processing}
-            onClick={confirmOrder}
-          >
-            {processing
-              ? "Abrindo pagamento seguro..."
-              : `Pagar ${money(
-                checkoutTotal
-              )} com Stripe`}
-          </button>
-          {(paymentError || returnError) && (
-            <p className="form-error">
-              {paymentError || returnError}
-            </p>
-          )}
-          <small className="secure-note">
-            ⌑ Pagamento processado pela Stripe
-          </small>
-        </section>
-        <aside className="panel order-summary">
-          <h2>Resumo do pedido</h2>
-          {checkoutItems.map(item => <div key={item.product.id}><span>{item.quantity}× {item.product.name}</span><b>{money(priceNumber(item.product.price) * item.quantity)}</b></div>)}
-          <div>
-            <span>Subtotal</span>
-            <b>{money(subtotal)}</b>
-          </div>
 
-          <div>
-            <span>
-              {fulfillmentType === "delivery"
-                ? "Taxa de entrega"
-                : "Retirada no local"}
-            </span>
-
-            <b>
-              {fulfillmentType === "delivery"
-                ? money(appliedDeliveryFee)
-                : "Grátis"}
-            </b>
-          </div>
-
-          <hr />
-
-          <div className="total">
+          <div className="payment-summary-total">
             <span>Total</span>
-            <b>{money(checkoutTotal)}</b>
+
+            <strong>
+              {money(checkoutTotal)}
+            </strong>
           </div>
-          <small>Prazo confirmado após o pedido.</small>
+
+          <footer>
+            <span>⌑</span>
+
+            <p>
+              O prazo será confirmado pela
+              confeitaria após o recebimento do
+              pedido.
+            </p>
+          </footer>
         </aside>
       </div>
-    </>
+    </div>
   );
 }
