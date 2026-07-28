@@ -738,6 +738,23 @@ export function ClientPortal({
       order => order.status === "completed"
     ).length;
 
+  const activeOrdersCount =
+    clientOrders.filter(
+      order =>
+        ![
+          "completed",
+          "cancelled",
+        ].includes(order.status)
+    ).length;
+
+  const pendingPaymentOrdersCount =
+    clientOrders.filter(
+      order =>
+        order.payment_status ===
+          "pending" &&
+        order.status !== "cancelled"
+    ).length;
+
   async function requestOrderChange(
     orderId: string,
     requestType:
@@ -2030,234 +2047,496 @@ export function ClientPortal({
           <ClientFaq />
         </>}
         {section === "pedidos" && (
-          <>
-            <div className="client-page-title">
-              <p className="eyebrow">HISTÓRICO</p>
-              <h1>Meus pedidos</h1>
+          <div className="client-orders-page">
+            <header className="client-orders-hero">
+              <div>
+                <p className="eyebrow">
+                  HISTÓRICO
+                </p>
 
-              <span>
-                Acompanhe suas encomendas realizadas.
-              </span>
-            </div>
+                <h1>Meus pedidos</h1>
 
-            <section className="panel client-orders">
-              {ordersLoading && (
-                <div className="empty-cart">
-                  <span>♨</span>
-                  <h3>Carregando pedidos...</h3>
+                <p>
+                  Acompanhe suas encomendas, pagamentos,
+                  entregas e solicitações em um só lugar.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={
+                  storeSettingsLoading ||
+                  !storeAcceptsOrders
+                }
+                onClick={() =>
+                  setSection("catalogo")
+                }
+              >
+                {storeSettingsLoading
+                  ? "Carregando..."
+                  : storeAcceptsOrders
+                    ? "＋ Nova encomenda"
+                    : "Encomendas pausadas"}
+              </button>
+            </header>
+
+            <section className="client-order-summary">
+              <article>
+                <span>▢</span>
+
+                <div>
+                  <small>
+                    Todos os pedidos
+                  </small>
+
+                  <b>{clientOrders.length}</b>
                 </div>
+              </article>
+
+              <article>
+                <span>◷</span>
+
+                <div>
+                  <small>
+                    Em andamento
+                  </small>
+
+                  <b>{activeOrdersCount}</b>
+                </div>
+              </article>
+
+              <article>
+                <span>$</span>
+
+                <div>
+                  <small>
+                    Aguardando pagamento
+                  </small>
+
+                  <b>
+                    {pendingPaymentOrdersCount}
+                  </b>
+                </div>
+              </article>
+
+              <article>
+                <span>✓</span>
+
+                <div>
+                  <small>
+                    Pedidos entregues
+                  </small>
+
+                  <b>
+                    {completedOrdersCount}
+                  </b>
+                </div>
+              </article>
+            </section>
+
+            {ordersLoading && (
+              <section className="client-orders-state">
+                <span>♨</span>
+
+                <h2>
+                  Carregando seus pedidos...
+                </h2>
+
+                <p>
+                  Estamos buscando as informações
+                  mais recentes das suas encomendas.
+                </p>
+              </section>
+            )}
+
+            {!ordersLoading &&
+              clientOrders.length === 0 && (
+                <section className="client-orders-state">
+                  <span>🧁</span>
+
+                  <p className="eyebrow">
+                    SUA PRIMEIRA ENCOMENDA
+                  </p>
+
+                  <h2>
+                    Você ainda não possui pedidos
+                  </h2>
+
+                  <p>
+                    Conheça nosso catálogo e escolha
+                    produtos preparados especialmente
+                    para você.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSection("catalogo")
+                    }
+                  >
+                    Ver catálogo
+                  </button>
+                </section>
               )}
 
-              {!ordersLoading &&
-                clientOrders.length === 0 && (
-                  <div className="empty-cart">
-                    <span>🧁</span>
+            {!ordersLoading &&
+              clientOrders.length > 0 && (
+                <section className="client-orders-list">
+                  <div className="client-orders-list-heading">
+                    <div>
+                      <h2>
+                        Histórico de encomendas
+                      </h2>
 
-                    <h3>
-                      Você ainda não possui pedidos
-                    </h3>
-
-                    <p>
-                      Adicione produtos ao carrinho para
-                      realizar sua primeira encomenda.
-                    </p>
+                      <p>
+                        Exibindo{" "}
+                        {clientOrders.length === 1
+                          ? "1 pedido"
+                          : `${clientOrders.length} pedidos`}
+                      </p>
+                    </div>
                   </div>
-                )}
 
-              {!ordersLoading &&
-                clientOrders.map(order => {
-                  const itemDescription =
-                    order.order_items
-                      .map(
-                        item =>
-                          `${item.quantity}× ${item.product_name}`
-                      )
-                      .join(", ");
-
-                  const orderProductImage =
-                    order.order_items
-                      .map(item =>
-                        products.find(
-                          product =>
-                            String(product.id) ===
-                            String(item.product_id)
+                  {clientOrders.map(order => {
+                    const itemDescription =
+                      order.order_items
+                        .map(
+                          item =>
+                            `${item.quantity}× ${item.product_name}`
                         )
-                      )
-                      .find(product => Boolean(product?.image))
-                      ?.image || "";
+                        .join(", ");
 
-                  const deliveryDescription =
-                    `${formatDeliveryDate(
-                      order.delivery_date
-                    )}${
-                      order.delivery_time
-                        ? ` às ${order.delivery_time.slice(
-                            0,
-                            5
-                          )}`
-                        : ""
-                    }`;
+                    const orderProductImage =
+                      order.order_items
+                        .map(item =>
+                          products.find(
+                            product =>
+                              String(product.id) ===
+                              String(item.product_id)
+                          )
+                        )
+                        .find(product =>
+                          Boolean(product?.image)
+                        )?.image || "";
 
-                  const isDelivery =
-                    order.fulfillment_type ===
-                    "delivery";
+                    const deliveryDescription =
+                      `${formatDeliveryDate(
+                        order.delivery_date
+                      )}${
+                        order.delivery_time
+                          ? ` às ${order.delivery_time.slice(
+                              0,
+                              5
+                            )}`
+                          : ""
+                      }`;
 
-                  const orderSubtotal =
-                    Number(order.subtotal_amount);
+                    const isDelivery =
+                      order.fulfillment_type ===
+                      "delivery";
 
-                  const orderDeliveryFee =
-                    Number(order.delivery_fee);
+                    const orderSubtotal =
+                      Number(
+                        order.subtotal_amount
+                      );
 
-                  const hasPendingRequest =
-                    order.request_status === "pending";
+                    const orderDeliveryFee =
+                      Number(
+                        order.delivery_fee
+                      );
 
-                  const canRequestChange =
-                    !["ready", "completed", "cancelled"].includes(
-                      order.status
-                    );
+                    const hasPendingRequest =
+                      order.request_status ===
+                      "pending";
 
-                  const canPayOrder =
-                    order.payment_status === "pending" &&
-                    order.status !== "cancelled";
+                    const canRequestChange =
+                      ![
+                        "ready",
+                        "completed",
+                        "cancelled",
+                      ].includes(order.status);
 
-                  return (
-                    <article key={order.id}>
-                      <div className="product-mini">
-                        {orderProductImage ? (
-                          <img
-                            src={orderProductImage}
-                            alt={itemDescription}
-                          />
-                        ) : (
-                          <span>🍰</span>
-                        )}
-                      </div>
+                    const canPayOrder =
+                      order.payment_status ===
+                        "pending" &&
+                      order.status !==
+                        "cancelled";
 
-                      <div>
-                        <small>
-                          #{order.order_number} •{" "}
-                          {formatOrderDate(
-                            order.created_at
-                          )}
-                        </small>
+                    const paymentLabel =
+                      order.payment_status ===
+                      "paid"
+                        ? "Pagamento confirmado"
+                        : order.payment_status ===
+                            "refunded"
+                          ? "Pagamento reembolsado"
+                          : order.payment_status ===
+                              "refund_pending"
+                            ? "Reembolso em análise"
+                            : "Pagamento pendente";
 
-                        <h3>{itemDescription}</h3>
+                    const paymentClass =
+                      order.payment_status ===
+                      "paid"
+                        ? "paid"
+                        : order.payment_status ===
+                            "refunded"
+                          ? "refunded"
+                          : "pending";
 
-                        <div className="client-order-delivery">
-                          <span className="fulfillment-badge">
-                            {isDelivery
-                              ? "▣ Entrega"
-                              : "⌂ Retirada no local"}
-                          </span>
-
-                          <p>{deliveryDescription}</p>
-
-                          {isDelivery &&
-                            order.delivery_address && (
-                              <small>
-                                {order.delivery_address}
-                              </small>
-                            )}
-                        </div>
-
-                        <div className="client-order-values">
-                          <span>
-                            Subtotal:{" "}
-                            <b>{money(orderSubtotal)}</b>
-                          </span>
-
-                          {isDelivery && (
-                            <span>
-                              Taxa de entrega:{" "}
-                              <b>
-                                {money(orderDeliveryFee)}
-                              </b>
+                    return (
+                      <article
+                        className="client-order-card"
+                        key={order.id}
+                      >
+                        <header className="client-order-card-header">
+                          <div>
+                            <span className="client-order-number">
+                              Pedido #
+                              {order.order_number}
                             </span>
-                          )}
+
+                            <small>
+                              Realizado em{" "}
+                              {formatOrderDate(
+                                order.created_at
+                              )}
+                            </small>
+                          </div>
+
+                          <div className="client-order-statuses">
+                            <Status>
+                              {orderStatusLabel(
+                                order.status
+                              )}
+                            </Status>
+
+                            <span
+                              className={`client-payment-status ${paymentClass}`}
+                            >
+                              <i />
+
+                              {paymentLabel}
+                            </span>
+                          </div>
+                        </header>
+
+                        <div className="client-order-card-body">
+                          <div className="client-order-product">
+                            <div className="client-order-image">
+                              {orderProductImage ? (
+                                <img
+                                  src={
+                                    orderProductImage
+                                  }
+                                  alt={
+                                    itemDescription
+                                  }
+                                />
+                              ) : (
+                                <span>🍰</span>
+                              )}
+                            </div>
+
+                            <div className="client-order-product-copy">
+                              <small>
+                                ITENS DA ENCOMENDA
+                              </small>
+
+                              <h3>
+                                {itemDescription}
+                              </h3>
+
+                              <span
+                                className={`client-fulfillment-badge ${
+                                  isDelivery
+                                    ? "delivery"
+                                    : "pickup"
+                                }`}
+                              >
+                                {isDelivery
+                                  ? "▣ Entrega"
+                                  : "⌂ Retirada no local"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="client-order-information">
+                            <article>
+                              <span>◷</span>
+
+                              <div>
+                                <small>
+                                  {isDelivery
+                                    ? "Data da entrega"
+                                    : "Data da retirada"}
+                                </small>
+
+                                <b>
+                                  {
+                                    deliveryDescription
+                                  }
+                                </b>
+                              </div>
+                            </article>
+
+                            {isDelivery &&
+                              order.delivery_address && (
+                                <article>
+                                  <span>⌖</span>
+
+                                  <div>
+                                    <small>
+                                      Endereço
+                                    </small>
+
+                                    <b>
+                                      {
+                                        order.delivery_address
+                                      }
+                                    </b>
+                                  </div>
+                                </article>
+                              )}
+                          </div>
+
+                          <aside className="client-order-total">
+                            <small>
+                              Total do pedido
+                            </small>
+
+                            <strong>
+                              {money(
+                                Number(
+                                  order.total_amount
+                                )
+                              )}
+                            </strong>
+
+                            <div>
+                              <span>
+                                Subtotal
+
+                                <b>
+                                  {money(
+                                    orderSubtotal
+                                  )}
+                                </b>
+                              </span>
+
+                              {isDelivery && (
+                                <span>
+                                  Entrega
+
+                                  <b>
+                                    {money(
+                                      orderDeliveryFee
+                                    )}
+                                  </b>
+                                </span>
+                              )}
+                            </div>
+                          </aside>
                         </div>
 
-                        {canPayOrder && (
-                          <div className="order-payment-action">
-                            <button
-                              type="button"
-                              className="pay-existing-order"
-                              disabled={
-                                payingOrderId === order.id
-                              }
-                              onClick={() =>
-                                payExistingOrder(order)
-                              }
-                            >
-                              {payingOrderId === order.id
-                                ? "Abrindo pagamento..."
-                                : `Pagar ${money(
-                                    Number(order.total_amount)
-                                  )}`}
-                            </button>
-                          </div>
-                        )}
-
-                        {hasPendingRequest && (
-                          <span className="request-badge">
-                            {order.request_type === "cancellation"
-                              ? "Cancelamento em análise"
-                              : "Reagendamento em análise"}
-                          </span>
-                        )}
-
-                        {canRequestChange &&
-                          !hasPendingRequest && (
-                            <div className="order-request-actions">
-                              <button
-                                disabled={
-                                  requestLoading === order.id
-                                }
-                                onClick={() =>
-                                  setRequestOrder(order.id)
-                                }
-                              >
-                                Reagendar
-                              </button>
-
-                              <button
-                                disabled={
-                                  requestLoading === order.id
-                                }
-                                onClick={() =>
-                                  requestCancellation(order)
-                                }
-                              >
-                                {requestLoading === order.id
-                                  ? "Enviando..."
-                                  : "Solicitar cancelamento"}
-                              </button>
+                        {(canPayOrder ||
+                          hasPendingRequest ||
+                          canRequestChange) && (
+                          <footer className="client-order-card-footer">
+                            <div>
+                              {hasPendingRequest && (
+                                <span className="request-badge">
+                                  ◷{" "}
+                                  {order.request_type ===
+                                  "cancellation"
+                                    ? "Cancelamento em análise"
+                                    : "Reagendamento em análise"}
+                                </span>
+                              )}
                             </div>
-                          )}
-                      </div>
 
-                      <div>
-                        <Status>
-                          {orderStatusLabel(
-                            order.status
-                          )}
-                        </Status>
+                            <div className="client-order-actions">
+                              {canRequestChange &&
+                                !hasPendingRequest && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="reschedule-order"
+                                      disabled={
+                                        requestLoading ===
+                                        order.id
+                                      }
+                                      onClick={() =>
+                                        setRequestOrder(
+                                          order.id
+                                        )
+                                      }
+                                    >
+                                      Reagendar
+                                    </button>
 
-                        <strong>
-                          {money(
-                            Number(order.total_amount)
-                          )}
-                        </strong>
-                      </div>
-                    </article>
-                  );
-                })}
-            </section>
-          </>
+                                    <button
+                                      type="button"
+                                      className="cancel-order"
+                                      disabled={
+                                        requestLoading ===
+                                        order.id
+                                      }
+                                      onClick={() =>
+                                        requestCancellation(
+                                          order
+                                        )
+                                      }
+                                    >
+                                      {requestLoading ===
+                                      order.id
+                                        ? "Enviando..."
+                                        : "Solicitar cancelamento"}
+                                    </button>
+                                  </>
+                                )}
+
+                              {canPayOrder && (
+                                <button
+                                  type="button"
+                                  className="pay-existing-order"
+                                  disabled={
+                                    payingOrderId ===
+                                    order.id
+                                  }
+                                  onClick={() =>
+                                    payExistingOrder(
+                                      order
+                                    )
+                                  }
+                                >
+                                  {payingOrderId ===
+                                  order.id
+                                    ? "Abrindo pagamento..."
+                                    : `Pagar ${money(
+                                        Number(
+                                          order.total_amount
+                                        )
+                                      )}`}
+                                </button>
+                              )}
+                            </div>
+                          </footer>
+                        )}
+                      </article>
+                    );
+                  })}
+                </section>
+              )}
+          </div>
         )}
         {section === "orcamentos" && (
           <ClientQuotes
             quotes={quotes}
             onAnswer={answerClientQuote}
+            onNewQuote={() => {
+              setSelectedProduct(null);
+              setSection("novo");
+            }}
           />
         )}
         {section === "catalogo" && <ClientCatalog products={products.filter(p => p.active)} onChoose={p => { setSelectedProduct(p); setSection("novo") }} onAdd={product => {  addToCart(product);  setCartOpen(true);}} />}
