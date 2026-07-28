@@ -21,7 +21,18 @@ export function Login({
 }: {
   onLogin: (profile: UserProfile) => void;
 }) {
-  const [role, setRole] = useState<Role>("admin");
+  const isAdminAccess =
+    typeof window !== "undefined" &&
+    new URLSearchParams(
+      window.location.search
+    ).get("access") === "admin";
+
+  const [role, setRole] =
+  useState<Role>(
+    isAdminAccess
+      ? "admin"
+      : "client"
+  );
   const [showPassword, setShowPassword] =
     useState(false);
   const [signup, setSignup] = useState(false);
@@ -36,6 +47,61 @@ export function Login({
 
   const [resetSent, setResetSent] =
     useState(false);
+
+  const isClient =
+    role === "client";
+
+  const loginContent = isClient
+    ? {
+        eyebrow:
+          "ENCOMENDAS FEITAS COM CARINHO",
+
+        title: (
+          <>
+            Momentos especiais
+            <br />
+            começam com um doce.
+          </>
+        ),
+
+        description:
+          "Explore nosso catálogo, personalize sua encomenda e acompanhe cada etapa do seu pedido.",
+
+        highlights: [
+          {
+            icon: "♡",
+            title: "Feito para você",
+            text: "Personalize sua encomenda",
+          },
+          {
+            icon: "♨",
+            title: "Sempre fresquinho",
+            text: "Produção feita com carinho",
+          },
+          {
+            icon: "✓",
+            title: "Acompanhe tudo",
+            text: "Do pedido até a entrega",
+          },
+        ],
+      }
+    : {
+        eyebrow:
+          "GESTÃO FEITA COM CARINHO",
+
+        title: (
+          <>
+            Mais tempo para criar.
+            <br />
+            Mais controle para crescer.
+          </>
+        ),
+
+        description:
+          "Organize pedidos, produção e clientes em um só lugar — com a delicadeza que sua confeitaria merece.",
+
+        highlights: [],
+      };
 
   async function handleLogin(
     e: FormEvent<HTMLFormElement>
@@ -250,10 +316,13 @@ export function Login({
   }
 
   return (
-    <main className="login-page">
+    <main
+      className={`login-page login-page-${role}`}
+    >
       <div className="login-theme-toggle">
         <ThemeToggle />
       </div>
+
       <section className="login-showcase">
         <div className="login-brand">
           <span>♨</span>
@@ -263,26 +332,107 @@ export function Login({
           </strong>
         </div>
 
-        <div className="login-copy">
-          <p>GESTÃO FEITA COM CARINHO</p>
+        <div
+          className="login-copy"
+          key={role}
+        >
+          <p>
+            {loginContent.eyebrow}
+          </p>
 
           <h1>
-            Mais tempo para criar.
-            <br />
-            Mais controle para crescer.
+            {loginContent.title}
           </h1>
 
           <span>
-            Organize pedidos, produção e clientes em
-            um só lugar — com a delicadeza que sua
-            confeitaria merece.
+            {loginContent.description}
           </span>
+
+          {isClient && (
+            <div className="login-client-highlights">
+              {loginContent.highlights.map(
+                highlight => (
+                  <article
+                    key={highlight.title}
+                  >
+                    <i>
+                      {highlight.icon}
+                    </i>
+
+                    <div>
+                      <b>
+                        {highlight.title}
+                      </b>
+
+                      <small>
+                        {highlight.text}
+                      </small>
+                    </div>
+                  </article>
+                )
+              )}
+            </div>
+          )}
         </div>
+
+        {isClient && (
+          <div className="login-sweets-gallery">
+            <div className="login-gallery-label">
+              <span>✦</span>
+              Inspirações FriBolos
+            </div>
+
+            <figure className="login-sweet-main">
+              <img
+                src="/BoloDecorado.webp"
+                alt="Bolo decorado FriBolos"
+              />
+
+              <figcaption>
+                Bolos personalizados
+              </figcaption>
+            </figure>
+
+            <figure className="login-sweet-secondary">
+              <img
+                src="/CupcakesDecorados.jpg"
+                alt="Cupcakes decorados"
+              />
+            </figure>
+
+            <figure className="login-sweet-tertiary">
+              <img
+                src="/DocesDecorados.jpeg"
+                alt="Doces artesanais"
+              />
+            </figure>
+          </div>
+        )}
 
         <div className="login-rings" />
       </section>
 
       <section className="login-area">
+        {isClient && (
+          <header className="client-login-header">
+            <div className="client-login-header-brand">
+              <img
+                src="/FaviconFribolos.png"
+                alt=""
+              />
+
+              <div>
+                <strong>
+                  Fri<em>Bolos</em>
+                </strong>
+
+                <small>
+                  Encomendas feitas com carinho
+                </small>
+              </div>
+            </div>
+          </header>
+        )}
         <form
           className="login-card"
           onSubmit={handleLogin}
@@ -295,51 +445,50 @@ export function Login({
             </strong>
           </div>
 
+          {isClient && (
+            <div className="client-welcome-logo">
+              <img
+                src="/FaviconFribolos.png"
+                alt="FriBolos"
+                width="72"
+                height="72"
+              />
+            </div>
+          )}
+
           <p className="eyebrow">
-            BEM-VINDO DE VOLTA
+            {isClient
+              ? "BEM-VINDO À FRIBOLOS"
+              : "ACESSO ADMINISTRATIVO"}
           </p>
 
-          <h2>Acesse sua conta</h2>
+          <h2>
+            {isClient
+              ? "Que bom ter você por aqui!"
+              : "Acesse o painel"}
+          </h2>
 
           <p className="login-subtitle">
-            Escolha seu tipo de acesso e informe seus
-            dados.
+            {isClient
+              ? "Entre para continuar planejando momentos deliciosos com a gente."
+              : "Informe seus dados para acessar a gestão da confeitaria."}
           </p>
 
-          <div
-            className="role-switch"
-            aria-label="Tipo de acesso"
-          >
-            <button
-              type="button"
-              className={
-                role === "admin" ? "selected" : ""
-              }
-              onClick={() => {
-                setRole("admin");
-                setError("");
-              }}
-            >
+          {role === "admin" && (
+            <div className="login-access-badge">
               <span>♚</span>
-              <b>Administrador</b>
-              <small>Gestão completa</small>
-            </button>
 
-            <button
-              type="button"
-              className={
-                role === "client" ? "selected" : ""
-              }
-              onClick={() => {
-                setRole("client");
-                setError("");
-              }}
-            >
-              <span>♙</span>
-              <b>Cliente</b>
-              <small>Meus pedidos</small>
-            </button>
-          </div>
+              <div>
+                <b>
+                  Acesso administrativo
+                </b>
+
+                <small>
+                  Gestão completa da confeitaria
+                </small>
+              </div>
+            </div>
+          )}
 
           <label className="login-label">
             E-mail
@@ -424,30 +573,57 @@ export function Login({
             type="submit"
             disabled={loading}
           >
-            {loading
-              ? "Entrando..."
-              : `Entrar como ${
-                  role === "admin"
-                    ? "administrador"
-                    : "cliente"
-                }`}
+          {loading
+            ? "Entrando..."
+            : "Entrar"}
 
             <span>→</span>
           </button>
 
           {role === "client" && (
-            <p className="signup">
-              Ainda não tem cadastro?{" "}
+            <div className="client-signup-invite">
+              <span>♡</span>
+
+              <div>
+                <small>
+                  É sua primeira visita?
+                </small>
+
+                <p>
+                  Crie sua conta e faça sua primeira
+                  encomenda.
+                </p>
+              </div>
 
               <button
                 type="button"
                 onClick={() => setSignup(true)}
               >
-                Criar minha conta
+                Criar conta
+                <span>→</span>
               </button>
-            </p>
+            </div>
           )}
         </form>
+
+        {isClient && (
+          <div className="client-login-trust">
+            <span>
+              <i>✓</i>
+              Dados protegidos
+            </span>
+
+            <span>
+              <i>♡</i>
+              Atendimento personalizado
+            </span>
+
+            <span>
+              <i>♨</i>
+              Produção artesanal
+            </span>
+          </div>
+        )}
 
         <footer>
           © {new Date().getFullYear()} FriBolos
