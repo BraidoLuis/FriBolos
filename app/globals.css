@@ -1098,6 +1098,10 @@ td:first-child {
     width: 250px;
   }
 
+  .order-request-actions{
+    flex-direction: column;
+  }
+
   .sidebar.open {
     transform: translateX(0);
   }
