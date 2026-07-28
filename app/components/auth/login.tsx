@@ -5,6 +5,8 @@ import {
   type FormEvent,
 } from "react";
 
+import { LoginReviewsCarousel } from "./login-reviews-carousel";
+
 import { supabase } from "../../lib/supabase";
 
 import {
@@ -319,17 +321,52 @@ export function Login({
     <main
       className={`login-page login-page-${role}`}
     >
-      <div className="login-theme-toggle">
-        <ThemeToggle />
-      </div>
+      {isClient ? (
+        <header className="login-client-topbar">
+
+          <div className="login-client-topbar-actions">
+            <a
+              href="/catalogo"
+              className="login-catalog-header-link"
+            >
+              <span>♨</span>
+
+              <div>
+                <b>Conhecer o catálogo</b>
+
+                <small>
+                  Veja nossas delícias
+                </small>
+              </div>
+
+              <i>→</i>
+            </a>
+
+            <ThemeToggle />
+          </div>
+        </header>
+      ) : (
+        <div className="login-theme-toggle">
+          <ThemeToggle />
+        </div>
+      )}
 
       <section className="login-showcase">
-        <div className="login-brand">
-          <span>♨</span>
+        <div className="client-login-header-brand">
+          <img
+            src="/FaviconFribolos.png"
+            alt=""
+          />
 
-          <strong>
-            Fri<em>Bolos</em>
-          </strong>
+          <div>
+            <strong>
+              Fri<em>Bolos</em>
+            </strong>
+
+            <small>
+              Encomendas feitas com carinho
+            </small>
+          </div>
         </div>
 
         <div
@@ -349,29 +386,33 @@ export function Login({
           </span>
 
           {isClient && (
-            <div className="login-client-highlights">
-              {loginContent.highlights.map(
-                highlight => (
-                  <article
-                    key={highlight.title}
-                  >
-                    <i>
-                      {highlight.icon}
-                    </i>
+            <>
+              <LoginReviewsCarousel />
 
-                    <div>
-                      <b>
-                        {highlight.title}
-                      </b>
+              <div className="login-client-highlights">
+                {loginContent.highlights.map(
+                  highlight => (
+                    <article
+                      key={highlight.title}
+                    >
+                      <i>
+                        {highlight.icon}
+                      </i>
 
-                      <small>
-                        {highlight.text}
-                      </small>
-                    </div>
-                  </article>
-                )
-              )}
-            </div>
+                      <div>
+                        <b>
+                          {highlight.title}
+                        </b>
+
+                        <small>
+                          {highlight.text}
+                        </small>
+                      </div>
+                    </article>
+                  )
+                )}
+              </div>
+            </>
           )}
         </div>
 
@@ -790,6 +831,10 @@ function Signup({ onBack }: { onBack: () => void }) {
   if (created) {
     return (
       <main className="account-created">
+        <div className="login-theme-toggle">
+          <ThemeToggle />
+        </div>
+
         <section>
           <span>✓</span>
 
@@ -801,11 +846,16 @@ function Signup({ onBack }: { onBack: () => void }) {
 
           <p>
             Enviamos uma confirmação para{" "}
-            <strong>{registeredEmail}</strong>.
-            Verifique seu e-mail antes de entrar.
+            <strong>
+              {registeredEmail}
+            </strong>
+            . Verifique seu e-mail antes de entrar.
           </p>
 
-          <button type="button" onClick={onBack}>
+          <button
+            type="button"
+            onClick={onBack}
+          >
             Ir para o login
           </button>
 
@@ -820,6 +870,9 @@ function Signup({ onBack }: { onBack: () => void }) {
 
   return (
     <main className="create-account">
+      <div className="login-theme-toggle">
+        <ThemeToggle />
+      </div>
       <aside>
         <div className="login-brand">
           <span>♨</span>

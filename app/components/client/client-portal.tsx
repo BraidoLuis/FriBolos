@@ -11,6 +11,10 @@ import {
   ThemeToggle,
 } from "../theme-toggle";
 
+import {
+  ClientReviewsCarousel,
+} from "./clients-reviews-carousel";
+
 import type {
   CartItem,
   CheckoutOrderOptions,
@@ -1926,6 +1930,74 @@ export function ClientPortal({
               </div>
             </article> */}
           </div>
+
+          <section className="client-about-section">
+            <div className="client-about-content">
+              <p className="eyebrow">
+                SOBRE A FRIBOLOS
+              </p>
+
+              <h2>
+                Carinho em cada detalhe,
+                sabor em cada momento.
+              </h2>
+
+              <p>
+                A FriBolos nasceu do desejo de transformar
+                momentos especiais em lembranças ainda mais
+                doces. Cada encomenda é preparada de forma
+                artesanal, com ingredientes selecionados,
+                atenção aos detalhes e muito carinho.
+              </p>
+
+              <p>
+                Produzimos bolos, doces e encomendas
+                personalizadas para celebrar aniversários,
+                encontros, conquistas e todas as ocasiões que
+                merecem um sabor especial.
+              </p>
+            </div>
+
+            <aside className="client-about-values">
+              <article>
+                <span>♡</span>
+
+                <div>
+                  <b>Feito com carinho</b>
+
+                  <small>
+                    Cada encomenda recebe atenção especial.
+                  </small>
+                </div>
+              </article>
+
+              <article>
+                <span>♨</span>
+
+                <div>
+                  <b>Produção artesanal</b>
+
+                  <small>
+                    Produtos preparados especialmente para você.
+                  </small>
+                </div>
+              </article>
+
+              <article>
+                <span>✓</span>
+
+                <div>
+                  <b>Qualidade e cuidado</b>
+
+                  <small>
+                    Ingredientes escolhidos com atenção.
+                  </small>
+                </div>
+              </article>
+            </aside>
+          </section>
+
+          <ClientReviewsCarousel />
         </>}
         {section === "pedidos" && (
           <>

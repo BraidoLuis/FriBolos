@@ -1321,7 +1321,7 @@ td:first-child {
 }
 
 .login-copy h1 {
-  font: 400 clamp(38px, 4vw, 60px)/1.08 "DM Serif Display";
+  font: 400 clamp(38px, 3vw, 60px)/1.08 "DM Serif Display";
   margin: 18px 0 24px;
 }
 
@@ -6088,12 +6088,14 @@ td:first-child {
 }
 
 .login-sweets-gallery {
-  position: absolute;
-  right: 5%;
-  z-index: 2;
-  width: 290px;
-  height: 245px;
-  pointer-events: none;
+    position: absolute;
+    right: 0%;
+    top: 2px;
+    z-index: 2;
+    width: 290px;
+    height: 245px;
+    transform: scale(0.8);
+    pointer-events: none;
 }
 
 .login-sweets-gallery figure {
@@ -6195,12 +6197,10 @@ td:first-child {
   max-width: 1250px
 ) {
   .login-sweets-gallery {
-    right: 1%;
-    width: 225px;
-    transform:
-      scale(0.82);
-    transform-origin:
-      right bottom;
+      right: 1%;
+      top: 10px;
+      transform: scale(0.52);
+      transform-origin: right;
   }
 }
 
@@ -6224,8 +6224,8 @@ td:first-child {
 }
 
 .client-login-header-brand img {
-  width: 45px;
-  height: 45px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
 }
 
@@ -6235,9 +6235,9 @@ td:first-child {
 }
 
 .client-login-header-brand strong {
-  color: var(--wine);
+  color: var(--gold);
   font:
-    400 20px
+    400 30px
     "DM Serif Display";
 }
 
@@ -6248,8 +6248,14 @@ td:first-child {
 
 .client-login-header-brand small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.3px;
+}
+
+@media(min-width: 801px){
+  .client-login-header{
+    display: none;
+  }
 }
 
 @media (max-width: 800px) {
@@ -6325,7 +6331,7 @@ td:first-child {
   position: absolute;
   z-index: 0;
   top: -6%;
-  right: -70px;
+  right: -108px;
   width: 150px;
   height: 112%;
   border-radius: 50%;
@@ -7250,5 +7256,2056 @@ button:hover:not(:disabled) {
 
   .client-stats {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ==================================================
+   CATÁLOGO PÚBLICO
+================================================== */
+
+.public-catalog-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 50% 0,
+      #fffdf7,
+      transparent 38%
+    ),
+    var(--cream);
+  color: var(--ink);
+}
+
+/* Header */
+
+.public-catalog-header {
+  position: sticky;
+  z-index: 40;
+  top: 0;
+  display: grid;
+  grid-template-columns:
+    1fr 1fr;
+  align-items: center;
+  gap: 28px;
+  min-height: 76px;
+  padding:
+    10px clamp(20px, 5vw, 80px);
+  border-bottom: 1px solid
+    rgba(86, 22, 46, 0.09);
+  background:
+    rgba(255, 253, 249, 0.9);
+  box-shadow:
+    0 8px 30px
+    rgba(86, 22, 46, 0.035);
+  backdrop-filter: blur(16px);
+}
+
+.public-catalog-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--wine);
+  text-decoration: none;
+}
+
+.public-catalog-brand img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.public-catalog-brand > div {
+  display: grid;
+  gap: 1px;
+}
+
+.public-catalog-brand strong {
+  font:
+    400 23px
+    "DM Serif Display";
+}
+
+.public-catalog-brand em {
+  color: var(--gold);
+  font-style: normal;
+}
+
+.public-catalog-brand small {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.public-catalog-header nav {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.public-catalog-header nav a {
+  padding: 10px 13px;
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.public-catalog-header nav a:hover {
+  color: var(--wine);
+  background:
+    rgba(166, 47, 90, 0.06);
+}
+
+.public-catalog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.public-catalog-login {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 9px 17px;
+  border-radius: 11px;
+  background:
+    linear-gradient(
+      135deg,
+      var(--wine),
+      var(--berry)
+    );
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow:
+    0 8px 20px
+    rgba(86, 22, 46, 0.14);
+}
+
+/* Hero */
+
+.public-catalog-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.2fr)
+    minmax(300px, 0.8fr);
+  align-items: center;
+  max-width: 1280px;
+  min-height: 520px;
+  margin: 36px auto 0;
+  overflow: hidden;
+  border-radius: 30px;
+  background:
+    radial-gradient(
+      circle at 80% 20%,
+      rgba(232, 177, 197, 0.3),
+      transparent 26%
+    ),
+    radial-gradient(
+      circle at 10% 100%,
+      rgba(228, 189, 85, 0.14),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      #51142e,
+      #792043 55%,
+      #a83262
+    );
+  box-shadow:
+    0 28px 70px
+    rgba(86, 22, 46, 0.17);
+}
+
+.public-catalog-hero::before {
+  content: "";
+  position: absolute;
+  right: -120px;
+  bottom: -210px;
+  width: 500px;
+  height: 500px;
+  border: 1px solid
+    rgba(255, 255, 255, 0.11);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 50px
+    rgba(255, 255, 255, 0.025),
+    0 0 0 115px
+    rgba(255, 255, 255, 0.017);
+}
+
+.public-catalog-hero-copy {
+  position: relative;
+  z-index: 2;
+  padding:
+    clamp(42px, 6vw, 76px);
+}
+
+.public-catalog-hero-copy
+.eyebrow {
+  color: #edc950;
+}
+
+.public-catalog-hero h1 {
+  max-width: 700px;
+  margin: 12px 0 19px;
+  color: #fff;
+  font:
+    400 clamp(
+      43px,
+      5vw,
+      68px
+    ) / 1.02
+    "DM Serif Display";
+}
+
+.public-catalog-hero-copy > p:not(.eyebrow) {
+  max-width: 570px;
+  margin: 0;
+  color: #ecdae1;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.public-catalog-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+  margin-top: 29px;
+}
+
+.public-catalog-hero-actions a {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  min-height: 50px;
+  padding: 12px 19px;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      135deg,
+      #ebc744,
+      #dba92c
+    );
+  color: #4b261b;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow:
+    0 12px 27px
+    rgba(36, 7, 17, 0.2);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.public-catalog-hero-actions
+a.secondary {
+  border: 1px solid
+    rgba(255, 255, 255, 0.28);
+  background:
+    rgba(255, 255, 255, 0.08);
+  color: #fff;
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+}
+
+.public-catalog-hero-actions a:hover {
+  transform: translateY(-2px);
+}
+
+.public-catalog-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 17px;
+  margin-top: 30px;
+}
+
+.public-catalog-benefits span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e9d6de;
+  font-size: 9px;
+}
+
+.public-catalog-benefits i {
+  color: #edc950;
+  font-style: normal;
+}
+
+/* Hero visual */
+
+.public-catalog-hero-visual {
+  position: relative;
+  z-index: 2;
+  min-height: 520px;
+}
+
+.public-catalog-main-image {
+  position: absolute;
+  top: 50%;
+  left: 48%;
+  width:
+    clamp(245px, 24vw, 350px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 7px solid
+    rgba(255, 255, 255, 0.68);
+  border-radius:
+    48% 52% 46% 54% /
+    55% 44% 56% 45%;
+  background: #fff;
+  box-shadow:
+    0 28px 60px
+    rgba(36, 5, 17, 0.34);
+  transform:
+    translate(-50%, -50%)
+    rotate(3deg);
+}
+
+.public-catalog-main-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.public-catalog-image-label {
+  position: absolute;
+  right: 9%;
+  bottom: 18%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid
+    rgba(255, 255, 255, 0.24);
+  border-radius: 15px;
+  background:
+    rgba(70, 12, 35, 0.72);
+  color: #fff;
+  box-shadow:
+    0 16px 38px
+    rgba(36, 5, 17, 0.25);
+  backdrop-filter: blur(10px);
+}
+
+.public-catalog-image-label
+> span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 9px;
+  background:
+    rgba(239, 200, 79, 0.14);
+  color: #efc84f;
+}
+
+.public-catalog-image-label
+> div {
+  display: grid;
+  gap: 2px;
+}
+
+.public-catalog-image-label b {
+  font-size: 10px;
+}
+
+.public-catalog-image-label small {
+  color: #ead6de;
+  font-size: 8px;
+}
+
+.public-catalog-decoration {
+  position: absolute;
+  color: #efc84f;
+}
+
+.public-catalog-decoration.decoration-one {
+  top: 21%;
+  left: 7%;
+  font-size: 25px;
+}
+
+.public-catalog-decoration.decoration-two {
+  top: 25%;
+  right: 9%;
+  font-size: 16px;
+}
+
+/* Conteúdo */
+
+.public-catalog-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding:
+    90px 28px 70px;
+  scroll-margin-top: 90px;
+}
+
+.public-catalog-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.public-catalog-title h2,
+.public-steps-heading h2 {
+  margin: 8px 0 0;
+  color: var(--wine);
+  font:
+    400 43px/1.05
+    "DM Serif Display";
+}
+
+.public-catalog-title > p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.public-catalog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 26px;
+}
+
+.public-category-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.public-category-filters button {
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.public-category-filters button.active {
+  border-color: var(--wine);
+  background: var(--wine);
+  color: #fff;
+}
+
+.public-catalog-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(290px, 100%);
+  min-height: 42px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.public-catalog-search span {
+  color: var(--berry);
+}
+
+.public-catalog-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+}
+
+/* Grade */
+
+.public-products-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.public-product-card {
+  overflow: hidden;
+  border: 1px solid
+    rgba(86, 22, 46, 0.1);
+  border-radius: 21px;
+  background: var(--paper);
+  box-shadow:
+    0 15px 40px
+    rgba(86, 22, 46, 0.055);
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.public-product-card:hover {
+  border-color:
+    rgba(166, 47, 90, 0.25);
+  transform: translateY(-5px);
+  box-shadow:
+    0 23px 50px
+    rgba(86, 22, 46, 0.11);
+}
+
+.public-product-card.sold-out {
+  opacity: 0.72;
+}
+
+.public-product-visual {
+  position: relative;
+  height: 165px;
+  overflow: hidden;
+  background: var(--pink);
+}
+
+.public-product-visual
+.product-visual {
+  width: 100%;
+  height: 100%;
+}
+
+.public-product-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition:
+    transform 0.45s ease;
+}
+
+.public-product-card:hover
+.public-product-visual img {
+  transform: scale(1.045);
+}
+
+.public-product-badges {
+  position: absolute;
+  z-index: 2;
+  top: 13px;
+  left: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.public-product-badges span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background:
+    rgba(255, 253, 249, 0.92);
+  color: var(--wine);
+  font-size: 8px;
+  font-weight: 700;
+  box-shadow:
+    0 5px 15px
+    rgba(46, 10, 24, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.public-product-badges
+span.featured {
+  background: var(--gold);
+  color: #4c2919;
+}
+
+.public-product-content {
+  padding: 20px;
+}
+
+.public-product-content > small {
+  color: var(--berry);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.public-product-content h3 {
+  margin: 7px 0 8px;
+  color: var(--wine);
+  font:
+    400 24px
+    "DM Serif Display";
+}
+
+.public-product-content > p {
+  display: -webkit-box;
+  min-height: 42px;
+  overflow: hidden;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.public-product-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 15px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.public-product-meta span:last-child {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.public-product-meta
+span.unavailable {
+  color: var(--berry);
+}
+
+.public-product-content footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.public-product-content
+footer > div {
+  display: grid;
+  gap: 2px;
+}
+
+.public-product-content
+footer small {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.public-product-content
+footer strong {
+  color: var(--wine);
+  font:
+    400 22px
+    "DM Serif Display";
+}
+
+.public-product-content
+footer > a {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      135deg,
+      var(--wine),
+      var(--berry)
+    );
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.public-product-content
+footer > a.disabled {
+  background: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Estados */
+
+.public-catalog-state {
+  display: grid;
+  min-height: 320px;
+  place-items: center;
+  align-content: center;
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+  text-align: center;
+}
+
+.public-catalog-state > span {
+  color: var(--berry);
+  font-size: 35px;
+}
+
+.public-catalog-state h3 {
+  margin: 14px 0 6px;
+  color: var(--wine);
+  font:
+    400 25px
+    "DM Serif Display";
+}
+
+.public-catalog-state p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.public-catalog-state button {
+  margin-top: 17px;
+  padding: 10px 15px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--wine);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Como funciona */
+
+.public-order-steps {
+  max-width: 1225px;
+  margin: 0 auto 80px;
+  padding: 55px;
+  border-radius: 27px;
+  background:
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(166, 47, 90, 0.09),
+      transparent 25%
+    ),
+    var(--paper);
+  box-shadow:
+    0 18px 55px
+    rgba(86, 22, 46, 0.07);
+  text-align: center;
+}
+
+.public-steps-heading {
+  margin-bottom: 32px;
+}
+
+.public-order-steps > div:nth-child(2) {
+  display: grid;
+  grid-template-columns:
+    repeat(3, 1fr);
+  gap: 14px;
+}
+
+.public-order-steps article {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  text-align: left;
+}
+
+.public-order-steps article > span {
+  color: var(--gold);
+  font:
+    400 27px
+    "DM Serif Display";
+}
+
+.public-order-steps article h3 {
+  margin: 13px 0 7px;
+  color: var(--wine);
+  font-size: 13px;
+}
+
+.public-order-steps article p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.public-order-steps > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 25px;
+  min-height: 47px;
+  margin-top: 30px;
+  padding: 11px 18px;
+  border-radius: 11px;
+  background: var(--wine);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Footer */
+
+.public-catalog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding:
+    28px clamp(20px, 5vw, 80px);
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.public-catalog-footer p,
+.public-catalog-footer > a {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.public-catalog-footer > a {
+  color: var(--berry);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Tema escuro */
+
+:root[data-theme="dark"]
+.public-catalog-header {
+  border-color: var(--line);
+  background:
+    rgba(33, 26, 29, 0.91);
+}
+
+:root[data-theme="dark"]
+.public-catalog-page {
+  background: var(--cream);
+}
+
+:root[data-theme="dark"]
+.public-product-badges span {
+  background:
+    rgba(33, 26, 29, 0.9);
+  color: var(--ink);
+}
+
+/* Responsividade */
+
+@media (max-width: 1050px) {
+  .public-catalog-hero {
+    margin:
+      24px 20px 0;
+  }
+
+  .public-products-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .public-catalog-header {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .public-catalog-header nav {
+    order: 3;
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .public-catalog-hero {
+    grid-template-columns: 1fr;
+    min-height: 530px;
+  }
+
+  .public-catalog-hero-copy {
+    padding: 40px 28px;
+  }
+
+  .public-catalog-hero-visual {
+    position: absolute;
+    right: -85px;
+    bottom: -100px;
+    width: 330px;
+    min-height: 330px;
+    opacity: 0.24;
+  }
+
+  .public-catalog-title {
+    display: grid;
+  }
+
+  .public-catalog-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .public-catalog-search {
+    width: 100%;
+  }
+
+  .public-order-steps {
+    margin:
+      0 18px 55px;
+    padding: 35px 20px;
+  }
+
+  .public-order-steps
+  > div:nth-child(2) {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .public-catalog-header {
+    padding: 10px 14px;
+  }
+
+  .public-catalog-brand small {
+    display: none;
+  }
+
+  .public-catalog-brand img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .public-catalog-brand strong {
+    font-size: 20px;
+  }
+
+  .public-catalog-hero {
+    min-height: 560px;
+    margin:
+      14px 12px 0;
+    border-radius: 22px;
+  }
+
+  .public-catalog-hero h1 {
+    font-size: 42px;
+  }
+
+  .public-catalog-hero-actions {
+    display: grid;
+  }
+
+  .public-catalog-hero-actions a {
+    justify-content: center;
+  }
+
+  .public-catalog-content {
+    padding:
+      65px 15px 55px;
+  }
+
+  .public-catalog-title h2,
+  .public-steps-heading h2 {
+    font-size: 35px;
+  }
+
+  .public-products-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-product-visual {
+    height: 280px;
+  }
+
+  .public-catalog-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* ==================================================
+   HEADER DO LOGIN DO CLIENTE
+================================================== */
+
+.login-client-topbar {
+  position: absolute;
+  z-index: 30;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 78px;
+  padding:
+    14px 24px
+    14px 34px;
+}
+
+/* Marca */
+
+.login-client-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--wine);
+  text-decoration: none;
+}
+
+.login-client-topbar-brand img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.login-client-topbar-brand > div {
+  display: grid;
+  gap: 1px;
+}
+
+.login-client-topbar-brand strong {
+  color: var(--wine);
+  font:
+    400 21px
+    "DM Serif Display";
+}
+
+.login-client-topbar-brand em {
+  color: var(--gold);
+  font-style: normal;
+}
+
+.login-client-topbar-brand small {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.2px;
+}
+
+/* Ações */
+
+.login-client-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.login-catalog-header-link {
+  display: grid;
+  grid-template-columns:
+    32px 1fr auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 6px 12px 6px 7px;
+  border: 1px solid
+    rgba(166, 47, 90, 0.14);
+  border-radius: 14px;
+  background:
+    rgba(255, 253, 249, 0.74);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow:
+    0 8px 24px
+    rgba(86, 22, 46, 0.055);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.login-catalog-header-link:hover {
+  border-color:
+    rgba(166, 47, 90, 0.32);
+  background: var(--paper);
+  box-shadow:
+    0 12px 27px
+    rgba(86, 22, 46, 0.09);
+  transform: translateY(-1px);
+}
+
+.login-catalog-header-link
+> span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--pink);
+  color: var(--berry);
+  font-size: 16px;
+  transform: rotate(180deg);
+}
+
+.login-catalog-header-link
+> div {
+  display: grid;
+  gap: 1px;
+}
+
+.login-catalog-header-link b {
+  color: var(--wine);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.login-catalog-header-link small {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.login-catalog-header-link i {
+  margin-left: 5px;
+  color: var(--berry);
+  font-size: 13px;
+  font-style: normal;
+}
+
+/* Tema escuro */
+
+:root[data-theme="dark"]
+.login-client-topbar {
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"]
+.login-catalog-header-link {
+  border-color: var(--line);
+  background:
+    rgba(33, 26, 29, 0.76);
+}
+
+/* Tablet e celular */
+
+@media (max-width: 800px) {
+  .login-client-topbar {
+    right: 0;
+    left: 0;
+    min-height: 70px;
+    padding: 10px 15px;
+    justify-content: flex-end;
+  }
+
+  .login-client-topbar-brand img {
+    width: 35px;
+    height: 35px;
+  }
+
+  .login-client-topbar-brand strong {
+    font-size: 19px;
+  }
+
+  .login-client-topbar-brand small {
+    display: none;
+  }
+
+  .login-page-client .login-area {
+    padding-top: 92px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-client-topbar {
+    gap: 8px;
+  }
+
+  .login-client-topbar-brand {
+    gap: 6px;
+  }
+
+  .login-client-topbar-brand img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .login-client-topbar-brand strong {
+    font-size: 18px;
+  }
+
+  .login-catalog-header-link {
+    display: flex;
+    min-height: 40px;
+    padding: 5px 9px;
+  }
+
+  .login-catalog-header-link
+  > span {
+    width: 28px;
+    height: 28px;
+  }
+
+  .login-catalog-header-link
+  > div {
+    display: none;
+  }
+
+  .login-catalog-header-link i {
+    margin-left: 0;
+  }
+}
+
+/* ========================================
+   MODO ESCURO — CRIAÇÃO DE CONTA
+   ======================================== */
+
+:root[data-theme="dark"] .create-account {
+  color: var(--ink);
+  background: var(--cream);
+}
+
+:root[data-theme="dark"]
+.create-account > aside {
+  background:
+    radial-gradient(
+      circle at 80% 20%,
+      rgba(210, 105, 145, 0.2),
+      transparent 30%
+    ),
+    linear-gradient(
+      150deg,
+      #3b1021,
+      #5d1734 55%,
+      #2b0c19
+    );
+}
+
+/* Área ao redor do formulário */
+
+:root[data-theme="dark"]
+.create-form-area {
+  background:
+    radial-gradient(
+      circle at 92% 8%,
+      rgba(210, 105, 145, 0.1),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 5% 92%,
+      rgba(228, 189, 85, 0.07),
+      transparent 26%
+    ),
+    var(--cream);
+}
+
+/* Cartão principal */
+
+:root[data-theme="dark"]
+.create-form-area form {
+  border-color: var(--line);
+  background:
+    rgba(33, 26, 29, 0.96);
+  box-shadow:
+    0 24px 70px
+    rgba(0, 0, 0, 0.32);
+}
+
+/* Títulos e textos */
+
+:root[data-theme="dark"]
+.create-form-area h1,
+:root[data-theme="dark"]
+.create-form-area h2,
+:root[data-theme="dark"]
+.create-form-area h3 {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"]
+.create-form-area .eyebrow {
+  color: var(--gold);
+}
+
+:root[data-theme="dark"]
+.create-form-area label {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"]
+.create-form-area small,
+:root[data-theme="dark"]
+.create-form-area p {
+  color: var(--muted);
+}
+
+/* Campos */
+
+:root[data-theme="dark"]
+.create-form-area input,
+:root[data-theme="dark"]
+.create-form-area select,
+:root[data-theme="dark"]
+.create-form-area textarea {
+  border-color: var(--line);
+  background: #171214;
+  color: var(--ink);
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"]
+.create-form-area input::placeholder,
+:root[data-theme="dark"]
+.create-form-area textarea::placeholder {
+  color: #8f8086;
+  opacity: 1;
+}
+
+:root[data-theme="dark"]
+.create-form-area input:focus,
+:root[data-theme="dark"]
+.create-form-area select:focus,
+:root[data-theme="dark"]
+.create-form-area textarea:focus {
+  outline: none;
+  border-color: var(--berry);
+  box-shadow:
+    0 0 0 4px
+    rgba(210, 105, 145, 0.11);
+}
+
+/* Corrige preenchimento automático do navegador */
+
+:root[data-theme="dark"]
+.create-form-area input:-webkit-autofill,
+:root[data-theme="dark"]
+.create-form-area input:-webkit-autofill:hover,
+:root[data-theme="dark"]
+.create-form-area input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow:
+    0 0 0 1000px #171214 inset;
+  caret-color: var(--ink);
+}
+
+/* Botões */
+
+:root[data-theme="dark"]
+.create-form-area button[type="submit"],
+:root[data-theme="dark"]
+.create-form-area .primary-button {
+  border-color: transparent;
+  background:
+    linear-gradient(
+      110deg,
+      #8e2852,
+      #c44778
+    );
+  color: #fff;
+  box-shadow:
+    0 12px 28px
+    rgba(0, 0, 0, 0.24);
+}
+
+:root[data-theme="dark"]
+.create-form-area button[type="submit"]:hover:not(:disabled),
+:root[data-theme="dark"]
+.create-form-area .primary-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+:root[data-theme="dark"]
+.create-form-area button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Voltar e entrar */
+
+:root[data-theme="dark"]
+.create-form-area .back-login,
+:root[data-theme="dark"]
+.create-form-area .create-login-link,
+:root[data-theme="dark"]
+.create-form-area a {
+  color: var(--berry);
+}
+
+:root[data-theme="dark"]
+.create-form-area .back-login:hover,
+:root[data-theme="dark"]
+.create-form-area .create-login-link:hover,
+:root[data-theme="dark"]
+.create-form-area a:hover {
+  color: var(--gold);
+}
+
+/* Etapas e divisores */
+
+:root[data-theme="dark"]
+.create-form-area .account-step {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"]
+.create-form-area hr {
+  border-color: var(--line);
+}
+
+/* Mensagens de erro e sucesso */
+
+:root[data-theme="dark"]
+.create-form-area .form-error {
+  border-color:
+    rgba(239, 105, 120, 0.3);
+  background:
+    rgba(239, 105, 120, 0.09);
+  color: #ff9eaa;
+}
+
+:root[data-theme="dark"]
+.create-form-area .form-success {
+  border-color:
+    rgba(121, 173, 136, 0.32);
+  background:
+    rgba(121, 173, 136, 0.09);
+  color: #9bd2aa;
+}
+
+/* Tela exibida após criar a conta */
+
+:root[data-theme="dark"]
+.account-created {
+  color: var(--ink);
+  background:
+    radial-gradient(
+      circle at 50% 20%,
+      rgba(210, 105, 145, 0.1),
+      transparent 28%
+    ),
+    var(--cream);
+}
+
+:root[data-theme="dark"]
+.account-created > section {
+  border-color: var(--line);
+  background: var(--paper);
+  box-shadow:
+    0 24px 70px
+    rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme="dark"]
+.account-created h1 {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"]
+.account-created p {
+  color: var(--muted);
+}
+
+/* Carrossel de avaliações do login */
+
+.login-reviews-carousel {
+  width: 100%;
+  max-width: 600px;
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid
+    rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background:
+    rgba(55, 8, 29, 0.2);
+  box-shadow:
+    0 18px 45px
+    rgba(49, 4, 24, 0.15);
+  backdrop-filter: blur(9px);
+}
+
+.login-review-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 14px;
+}
+
+.login-review-heading > span {
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background:
+    rgba(240, 201, 79, 0.14);
+  color: #f0c94f;
+}
+
+.login-review-heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.login-review-heading small {
+  color: #f0c94f;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+
+.login-review-heading strong {
+  color: #fff;
+  font-size: 13px;
+}
+
+.login-review-content {
+  animation:
+    login-review-enter
+    0.35s ease both;
+}
+
+@keyframes login-review-enter {
+  from {
+    opacity: 0;
+    transform:
+      translateX(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateX(0);
+  }
+}
+
+.login-review-stars {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 9px;
+}
+
+.login-review-stars span {
+  color:
+    rgba(255, 255, 255, 0.25);
+  font-size: 13px;
+}
+
+.login-review-stars span.filled {
+  color: #f0c94f;
+}
+
+.login-review-content blockquote {
+  min-height: 42px;
+  margin: 0;
+  color: #fff7f9;
+  font-family:
+    "DM Serif Display",
+    serif;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.login-review-content footer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.login-review-avatar {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    rgba(255, 255, 255, 0.12);
+  color: #f0c94f;
+}
+
+.login-review-content footer div {
+  display: grid;
+  gap: 1px;
+}
+
+.login-review-content footer b {
+  color: #fff;
+  font-size: 11px;
+}
+
+.login-review-content footer small {
+  color: #e7cfd8;
+  font-size: 9px;
+}
+
+.login-review-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: -32px;
+}
+
+.login-review-controls > button {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid
+    rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background:
+    rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+
+.login-review-controls > div {
+  display: flex;
+  gap: 4px;
+}
+
+.login-review-controls
+> div
+> button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background:
+    rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+}
+
+.login-review-controls
+> div
+> button.active {
+  width: 17px;
+  border-radius: 5px;
+  background: #f0c94f;
+}
+
+@media (max-width: 1180px) {
+  .login-reviews-carousel {
+    max-width: 400px;
+  }
+
+  .login-review-content blockquote {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 800px) {
+  .login-reviews-carousel {
+    display: none;
+  }
+}
+
+/* ========================================
+   SOBRE NÓS — ÁREA DO CLIENTE
+   ======================================== */
+
+.client-about-section {
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.35fr)
+    minmax(280px, 0.65fr);
+  gap: 34px;
+  margin-top: 28px;
+  padding: 42px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background:
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(166, 47, 90, 0.08),
+      transparent 30%
+    ),
+    var(--paper);
+  box-shadow:
+    0 18px 50px
+    rgba(86, 22, 46, 0.06);
+}
+
+.client-about-section::after {
+  content: "";
+  position: absolute;
+  right: -90px;
+  bottom: -120px;
+  width: 240px;
+  height: 240px;
+  border: 1px solid
+    rgba(166, 47, 90, 0.1);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 36px
+    rgba(166, 47, 90, 0.025);
+  pointer-events: none;
+}
+
+.client-about-content {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+}
+
+.client-about-content h2 {
+  max-width: 620px;
+  margin:
+    9px 0 18px;
+  color: var(--wine);
+  font:
+    400 34px/1.15
+    "DM Serif Display",
+    serif;
+}
+
+.client-about-content > p:not(.eyebrow) {
+  max-width: 680px;
+  margin:
+    0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.client-about-values {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  gap: 11px;
+}
+
+.client-about-values article {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid
+    rgba(166, 47, 90, 0.12);
+  border-radius: 14px;
+  background:
+    rgba(245, 229, 231, 0.34);
+}
+
+.client-about-values article > span {
+  display: grid;
+  flex: 0 0 39px;
+  width: 39px;
+  height: 39px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--pink);
+  color: var(--berry);
+  font-size: 17px;
+}
+
+.client-about-values article > div {
+  display: grid;
+  gap: 3px;
+}
+
+.client-about-values b {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.client-about-values small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* ========================================
+   AVALIAÇÕES — ÁREA DO CLIENTE
+   ======================================== */
+
+.client-reviews-section {
+  margin-top: 28px;
+  padding-bottom: 20px;
+}
+
+.client-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 17px;
+}
+
+.client-section-heading h2 {
+  margin-top: 7px;
+  color: var(--wine);
+  font:
+    400 32px/1.15
+    "DM Serif Display",
+    serif;
+}
+
+.client-section-heading > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.client-review-card {
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    70px 1fr auto;
+  align-items: center;
+  gap: 18px;
+  min-height: 190px;
+  padding: 28px 30px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      135deg,
+      var(--paper),
+      rgba(245, 229, 231, 0.42)
+    );
+  box-shadow:
+    0 16px 44px
+    rgba(86, 22, 46, 0.06);
+  animation:
+    client-review-enter
+    0.35s ease both;
+}
+
+@keyframes client-review-enter {
+  from {
+    opacity: 0;
+    transform:
+      translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateX(0);
+  }
+}
+
+.client-review-quote {
+  align-self: start;
+  color:
+    rgba(166, 47, 90, 0.2);
+  font:
+    400 92px/0.8
+    "DM Serif Display",
+    serif;
+}
+
+.client-review-body {
+  min-width: 0;
+}
+
+.client-review-stars {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.client-review-stars span {
+  color: var(--line);
+  font-size: 15px;
+}
+
+.client-review-stars span.filled {
+  color: var(--gold);
+}
+
+.client-review-body blockquote {
+  max-width: 800px;
+  margin: 0;
+  color: var(--ink);
+  font:
+    400 22px/1.45
+    "DM Serif Display",
+    serif;
+}
+
+.client-review-body footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.client-review-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--pink);
+  color: var(--berry);
+}
+
+.client-review-body footer div {
+  display: grid;
+  gap: 2px;
+}
+
+.client-review-body footer b {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.client-review-body footer small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.client-review-navigation {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.client-review-navigation > button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--berry);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.client-review-navigation > div {
+  display: flex;
+  gap: 4px;
+}
+
+.client-review-navigation
+> div
+> button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--line);
+  cursor: pointer;
+}
+
+.client-review-navigation
+> div
+> button.active {
+  width: 18px;
+  background: var(--berry);
+}
+
+.client-review-loading {
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Modo escuro */
+
+:root[data-theme="dark"]
+.client-about-section,
+:root[data-theme="dark"]
+.client-review-card {
+  border-color: var(--line);
+  background:
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(210, 105, 145, 0.08),
+      transparent 30%
+    ),
+    var(--paper);
+  box-shadow:
+    0 18px 50px
+    rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme="dark"]
+.client-about-values article {
+  border-color: var(--line);
+  background:
+    rgba(210, 105, 145, 0.06);
+}
+
+:root[data-theme="dark"]
+.client-review-navigation > button {
+  background: var(--cream);
+}
+
+/* Responsividade */
+
+@media (max-width: 900px) {
+  .client-about-section {
+    grid-template-columns: 1fr;
+    padding: 30px;
+  }
+
+  .client-about-values {
+    grid-template-columns:
+      repeat(3, 1fr);
+  }
+
+  .client-about-values article {
+    align-items: flex-start;
+  }
+
+  .client-review-card {
+    grid-template-columns:
+      54px 1fr;
+  }
+
+  .client-review-navigation {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 650px) {
+  .client-about-section {
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+
+  .client-about-content h2,
+  .client-section-heading h2 {
+    font-size: 27px;
+  }
+
+  .client-about-values {
+    grid-template-columns: 1fr;
+  }
+
+  .client-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .client-review-card {
+    grid-template-columns: 1fr;
+    padding: 23px 20px;
+  }
+
+  .client-review-quote {
+    display: none;
+  }
+
+  .client-review-body blockquote {
+    font-size: 19px;
+  }
+
+  .client-review-navigation {
+    grid-column: auto;
+    justify-content: center;
   }
 }
