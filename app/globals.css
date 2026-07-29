@@ -13289,12 +13289,12 @@ article
 
 .payment-success-information b {
   color: var(--ink);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .payment-success-information small {
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .payment-view-orders {
