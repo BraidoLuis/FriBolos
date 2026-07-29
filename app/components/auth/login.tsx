@@ -1209,7 +1209,7 @@ function Signup({ onBack }: { onBack: () => void }) {
             <strong>
               {registeredEmail}
             </strong>
-            . Verifique seu e-mail antes de entrar.
+            . Verifique seu e-mail antes de entrar, verifique a caixa de spam.
           </p>
 
           <button
