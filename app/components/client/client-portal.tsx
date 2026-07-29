@@ -19,6 +19,10 @@ import {
   ClientReviewsCarousel,
 } from "./clients-reviews-carousel";
 
+import {
+  PreviousReviews,
+} from "./previous-reviews";
+
 import type {
   CartItem,
   CheckoutOrderOptions,
@@ -138,8 +142,6 @@ export function ClientPortal({
     confirmedPaymentOrderNumber,
     setConfirmedPaymentOrderNumber,
   ] = useState<number | null>(null);
-  const [reviewed, setReviewed] =
-    useState(false);
 
   const [stars, setStars] =
     useState(0);
@@ -347,7 +349,7 @@ export function ClientPortal({
       }
 
     const normalizedOrders =
-      ((data || []) as ClientOrderRow[]).map(
+      ((data || []) as unknown as ClientOrderRow[]).map(
         order => ({
           ...order,
 
@@ -361,7 +363,7 @@ export function ClientPortal({
             ),
 
           reviews:
-            order.reviews || [],
+            order.reviews || null,
         })
       );
 
@@ -731,7 +733,14 @@ export function ClientPortal({
     clientOrders.filter(
       order =>
         order.status === "completed" &&
-        (order.reviews?.length || 0) === 0
+        !order.reviews
+    );
+
+  const reviewedOrders =
+    clientOrders.filter(
+      order =>
+        order.status === "completed" &&
+        Boolean(order.reviews)
     );
     
   const completedOrdersCount =
@@ -1126,7 +1135,7 @@ export function ClientPortal({
           return;
         }
       }
-      
+
       const { 
         data: createdQuote,
         error: quoteRequestError,
@@ -1252,8 +1261,9 @@ export function ClientPortal({
 
       await loadClientOrders();
 
-      setReviewed(true);
+      setStars(0);
       return true;
+
     } catch (error) {
       console.error(
         "Erro inesperado ao enviar avaliação:",
@@ -2906,16 +2916,22 @@ export function ClientPortal({
           />
         )}
         {section === "avaliacao" && (
-          <Review
-            orders={reviewableOrders}
-            products={products}
-            reviewed={reviewed}
-            stars={stars}
-            setStars={setStars}
-            loading={reviewLoading}
-            error={reviewError}
-            onSubmit={submitOrderReview}
-          />
+          <>
+            <Review
+              orders={reviewableOrders}
+              products={products}
+              stars={stars}
+              setStars={setStars}
+              loading={reviewLoading}
+              error={reviewError}
+              onSubmit={submitOrderReview}
+            />
+
+            <PreviousReviews
+              orders={reviewedOrders}
+              products={products}
+            />
+          </>
         )}
         {section === "perfil" && (
           <>

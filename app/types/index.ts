@@ -80,7 +80,7 @@ export type ClientOrderRow = {
   request_reason: string | null;
   created_at: string;
   order_items: ClientOrderItemRow[];
-  reviews: ClientReviewRow[];
+  reviews: ClientReviewRow | null;
 };
 
 export type UserProfile = {

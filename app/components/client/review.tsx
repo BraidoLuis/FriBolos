@@ -28,7 +28,6 @@ const ratingLabels: Record<
 export function Review({
   orders,
   products,
-  reviewed,
   stars,
   setStars,
   loading,
@@ -37,7 +36,6 @@ export function Review({
 }: {
   orders: ClientOrderRow[];
   products: Product[];
-  reviewed: boolean;
   stars: number;
   setStars: (rating: number) => void;
   loading: boolean;
@@ -73,35 +71,6 @@ export function Review({
 
   const displayedRating =
     hoveredRating || stars;
-
-  if (reviewed) {
-    return (
-      <section className="review-feedback-state review-feedback-success">
-        <div className="review-feedback-icon">
-          ★
-        </div>
-
-        <p className="eyebrow">
-          AVALIAÇÃO ENVIADA
-        </p>
-
-        <h1>
-          Obrigado pela avaliação!
-        </h1>
-
-        <p>
-          Sua opinião ajuda a FriBolos a
-          preparar experiências cada vez mais
-          especiais, saborosas e cheias de
-          carinho.
-        </p>
-
-        <div className="review-feedback-stars">
-          ★★★★★
-        </div>
-      </section>
-    );
-  }
 
   if (orders.length === 0) {
     return (
@@ -215,10 +184,18 @@ export function Review({
       return;
     }
 
-    await onSubmit(
+    const success = await onSubmit(
       selectedOrder.id,
       comment.trim()
     );
+
+    if (!success) {
+      return;
+    }
+
+    setComment("");
+    setHoveredRating(0);
+    setSelectedOrderId("");
   }
 
   return (
