@@ -10,6 +10,12 @@ import { LoginReviewsCarousel } from "./login-reviews-carousel";
 import { supabase } from "../../lib/supabase";
 
 import {
+  maximumBirthDate,
+  formatZipCode,
+  minimumBirthDate,
+} from "../../lib/formatters";
+
+import {
   ThemeToggle,
 } from "../theme-toggle";
 
@@ -708,6 +714,348 @@ function Signup({ onBack }: { onBack: () => void }) {
   const [registeredEmail, setRegisteredEmail] =
     useState("");
 
+  function validatePersonalData(
+    form: HTMLFormElement
+  ) {
+    const data =
+      new FormData(form);
+
+    const name = String(
+      data.get("name") || ""
+    ).trim();
+
+    const email = String(
+      data.get("email") || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    const phone = String(
+      data.get("phone") || ""
+    ).trim();
+
+    const birthDate = String(
+      data.get("birth") || ""
+    );
+
+    if (
+      !name ||
+      !email ||
+      !phone ||
+      !birthDate
+    ) {
+      setError(
+        "Preencha todos os dados pessoais."
+      );
+
+      return false;
+    }
+
+    /*
+    * Exige pelo menos nome e sobrenome.
+    * Permite letras, espaços, hífen e apóstrofo.
+    */
+    const namePattern =
+      /^[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)+$/u;
+
+    if (
+      name.length < 5 ||
+      name.length > 100 ||
+      !namePattern.test(name)
+    ) {
+      setError(
+        "Informe seu nome completo, sem números ou caracteres inválidos."
+      );
+
+      return false;
+    }
+
+    const emailPattern =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (
+      email.length > 254 ||
+      !emailPattern.test(email)
+    ) {
+      setError(
+        "Informe um endereço de e-mail válido."
+      );
+
+      return false;
+    }
+
+    const phonePattern =
+      /^\(\d{2}\) \d{5}-\d{4}$/;
+
+    if (!phonePattern.test(phone)) {
+      setError(
+        "Informe um telefone válido no formato (22) 99999-9999."
+      );
+
+      return false;
+    }
+
+    if (
+      birthDate <
+        minimumBirthDate() ||
+      birthDate >
+        maximumBirthDate()
+    ) {
+      setError(
+        "Informe uma data de nascimento válida."
+      );
+
+      return false;
+    }
+
+    const parsedBirthDate =
+      new Date(
+        `${birthDate}T12:00:00`
+      );
+
+    if (
+      Number.isNaN(
+        parsedBirthDate.getTime()
+      )
+    ) {
+      setError(
+        "Informe uma data de nascimento válida."
+      );
+
+      return false;
+    }
+
+    setError("");
+
+    return true;
+  }
+
+  function validateAddressData(
+    form: HTMLFormElement
+  ) {
+    const data =
+      new FormData(form);
+
+    const zip = String(
+      data.get("zip") || ""
+    ).trim();
+
+    const street = String(
+      data.get("street") || ""
+    ).trim();
+
+    const number = String(
+      data.get("number") || ""
+    ).trim();
+
+    const complement = String(
+      data.get("complement") || ""
+    ).trim();
+
+    const district = String(
+      data.get("district") || ""
+    ).trim();
+
+    const city = String(
+      data.get("city") || ""
+    ).trim();
+
+    if (
+      !zip ||
+      !street ||
+      !number ||
+      !district ||
+      !city
+    ) {
+      setError(
+        "Preencha os dados obrigatórios do endereço."
+      );
+
+      return false;
+    }
+
+    const zipPattern =
+      /^\d{5}-\d{3}$/;
+
+    if (
+      !zipPattern.test(zip) ||
+      zip === "00000-000"
+    ) {
+      setError(
+        "Informe um CEP válido no formato 00000-000."
+      );
+
+      return false;
+    }
+
+    /*
+    * A rua precisa ter ao menos
+    * uma letra e entre 3 e 120 caracteres.
+    * Números continuam permitidos,
+    * como em “Rua 7”.
+    */
+    if (
+      street.length < 3 ||
+      street.length > 120 ||
+      !/\p{L}/u.test(street)
+    ) {
+      setError(
+        "Informe um nome de rua válido."
+      );
+
+      return false;
+    }
+
+    /*
+    * Aceita números como:
+    * 123, 123A, 12-14 e também S/N.
+    */
+    const addressNumberPattern =
+      /^(?:s\/n|(?=.*\d)[\p{L}\d\s./-]+)$/iu;
+
+    if (
+      number.length > 20 ||
+      !addressNumberPattern.test(number)
+    ) {
+      setError(
+        "Informe o número do endereço ou use S/N."
+      );
+
+      return false;
+    }
+
+    if (complement.length > 100) {
+      setError(
+        "O complemento deve possuir no máximo 100 caracteres."
+      );
+
+      return false;
+    }
+
+    if (
+      district.length < 2 ||
+      district.length > 80 ||
+      !/\p{L}/u.test(district)
+    ) {
+      setError(
+        "Informe um bairro válido."
+      );
+
+      return false;
+    }
+
+    if (
+      city.length < 2 ||
+      city.length > 80 ||
+      !/\p{L}/u.test(city)
+    ) {
+      setError(
+        "Informe uma cidade válida."
+      );
+
+      return false;
+    }
+
+    setError("");
+
+    return true;
+  }
+
+  function validateSecurityData(
+    form: HTMLFormElement
+  ) {
+    const data =
+      new FormData(form);
+
+    const password = String(
+      data.get("password") || ""
+    );
+
+    const confirmPassword = String(
+      data.get("confirm") || ""
+    );
+
+    const acceptedTerms =
+      data.get("terms") === "on";
+
+    if (
+      !password ||
+      !confirmPassword
+    ) {
+      setError(
+        "Preencha e confirme sua senha."
+      );
+
+      return false;
+    }
+
+    if (
+      password.length < 8 ||
+      password.length > 72
+    ) {
+      setError(
+        "A senha deve possuir entre 8 e 72 caracteres."
+      );
+
+      return false;
+    }
+
+    if (/\s/.test(password)) {
+      setError(
+        "A senha não pode conter espaços."
+      );
+
+      return false;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setError(
+        "A senha deve possuir pelo menos uma letra minúscula."
+      );
+
+      return false;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setError(
+        "A senha deve possuir pelo menos uma letra maiúscula."
+      );
+
+      return false;
+    }
+
+    if (!/\d/.test(password)) {
+      setError(
+        "A senha deve possuir pelo menos um número."
+      );
+
+      return false;
+    }
+
+    if (
+      password !==
+      confirmPassword
+    ) {
+      setError(
+        "As senhas não coincidem."
+      );
+
+      return false;
+    }
+
+    if (!acceptedTerms) {
+      setError(
+        "Você precisa aceitar os Termos de uso e a Política de privacidade."
+      );
+
+      return false;
+    }
+
+    setError("");
+
+    return true;
+  }
+
   async function submit(
     e: FormEvent<HTMLFormElement>
   ) {
@@ -716,6 +1064,24 @@ function Signup({ onBack }: { onBack: () => void }) {
 
     const form = e.currentTarget;
     const data = new FormData(form);
+
+    if (!validatePersonalData(form)) {
+      setStep(1);
+
+      return;
+    }
+
+    if (!validateAddressData(form)) {
+      setStep(2);
+
+      return;
+    }
+
+    if (!validateSecurityData(form)) {
+      setStep(3);
+
+      return;
+    }
 
     const name = String(data.get("name") || "").trim();
 
@@ -752,51 +1118,6 @@ function Signup({ onBack }: { onBack: () => void }) {
     const password = String(
       data.get("password") || ""
     );
-
-    const confirmPassword = String(
-      data.get("confirm") || ""
-    );
-
-    if (!name || !email || !phone || !birthDate) {
-      setError("Preencha todos os dados pessoais.");
-      setStep(1);
-      return;
-    }
-
-    const phonePattern =
-      /^\(\d{2}\) \d{5}-\d{4}$/;
-
-    if (!phonePattern.test(phone)) {
-      setError(
-        "Informe um telefone válido no formato (22) 99999-9999."
-      );
-
-      setStep(1);
-
-      return;
-    }
-
-    if (!zip || !street || !number || !district || !city) {
-      setError(
-        "Preencha os dados obrigatórios do endereço."
-      );
-      setStep(2);
-      return;
-    }
-
-    if (password.length < 6) {
-      setError(
-        "A senha deve possuir pelo menos 6 caracteres."
-      );
-      setStep(3);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("As senhas não coincidem.");
-      setStep(3);
-      return;
-    }
 
     setLoading(true);
 
@@ -1037,14 +1358,26 @@ function Signup({ onBack }: { onBack: () => void }) {
                 required={step === 1}
                 type="date"
                 name="birth"
+                min={minimumBirthDate()}
+                max={maximumBirthDate()}
+                autoComplete="bday"
               />
             </label>
 
             <button
               type="button"
               className="next-step"
-              onClick={() => {
-                setError("");
+              onClick={event => {
+                const form =
+                  event.currentTarget.form;
+
+                if (
+                  !form ||
+                  !validatePersonalData(form)
+                ) {
+                  return;
+                }
+
                 setStep(2);
               }}
             >
@@ -1065,8 +1398,19 @@ function Signup({ onBack }: { onBack: () => void }) {
               <input
                 required={step === 2}
                 name="zip"
+                type="text"
+                inputMode="numeric"
+                maxLength={9}
                 placeholder="00000-000"
                 autoComplete="postal-code"
+                pattern="\d{5}-\d{3}"
+                title="Informe o CEP no formato 00000-000"
+                onInput={event => {
+                  event.currentTarget.value =
+                    formatZipCode(
+                      event.currentTarget.value
+                    );
+                }}
               />
             </label>
 
@@ -1076,8 +1420,10 @@ function Signup({ onBack }: { onBack: () => void }) {
               <input
                 required={step === 2}
                 name="street"
+                minLength={3}
+                maxLength={120}
                 placeholder="Nome da rua"
-                autoComplete="street-address"
+                autoComplete="address-line1"
               />
             </label>
 
@@ -1088,7 +1434,9 @@ function Signup({ onBack }: { onBack: () => void }) {
                 <input
                   required={step === 2}
                   name="number"
-                  placeholder="Número"
+                  maxLength={20}
+                  placeholder="Número ou S/N"
+                  autoComplete="address-line2"
                 />
               </label>
 
@@ -1097,7 +1445,9 @@ function Signup({ onBack }: { onBack: () => void }) {
 
                 <input
                   name="complement"
+                  maxLength={100}
                   placeholder="Apartamento, bloco..."
+                  autoComplete="address-line2"
                 />
               </label>
             </div>
@@ -1109,7 +1459,10 @@ function Signup({ onBack }: { onBack: () => void }) {
                 <input
                   required={step === 2}
                   name="district"
+                  minLength={2}
+                  maxLength={80}
                   placeholder="Bairro"
+                  autoComplete="address-level3"
                 />
               </label>
 
@@ -1119,6 +1472,8 @@ function Signup({ onBack }: { onBack: () => void }) {
                 <input
                   required={step === 2}
                   name="city"
+                  minLength={2}
+                  maxLength={80}
                   placeholder="Cidade"
                   autoComplete="address-level2"
                 />
@@ -1139,8 +1494,17 @@ function Signup({ onBack }: { onBack: () => void }) {
               <button
                 type="button"
                 className="next-step"
-                onClick={() => {
-                  setError("");
+                onClick={event => {
+                  const form =
+                    event.currentTarget.form;
+
+                  if (
+                    !form ||
+                    !validateAddressData(form)
+                  ) {
+                    return;
+                  }
+
                   setStep(3);
                 }}
               >
@@ -1161,12 +1525,18 @@ function Signup({ onBack }: { onBack: () => void }) {
 
               <input
                 required={step === 3}
-                minLength={6}
+                minLength={8}
+                maxLength={72}
                 type="password"
                 name="password"
-                placeholder="Mínimo de 6 caracteres"
+                placeholder="Crie uma senha segura"
                 autoComplete="new-password"
               />
+
+              <small>
+                Use pelo menos 8 caracteres, com letra
+                maiúscula, minúscula e número.
+              </small>
             </label>
 
             <label>
@@ -1174,7 +1544,8 @@ function Signup({ onBack }: { onBack: () => void }) {
 
               <input
                 required={step === 3}
-                minLength={6}
+                minLength={8}
+                maxLength={72}
                 type="password"
                 name="confirm"
                 placeholder="Repita sua senha"
@@ -1186,6 +1557,7 @@ function Signup({ onBack }: { onBack: () => void }) {
               <input
                 required={step === 3}
                 type="checkbox"
+                name="terms"
               />
 
               <span>
