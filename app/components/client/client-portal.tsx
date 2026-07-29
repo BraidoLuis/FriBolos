@@ -1126,7 +1126,8 @@ export function ClientPortal({
           return;
         }
       }
-      const {
+      
+      const { 
         data: createdQuote,
         error: quoteRequestError,
       } = await supabase.rpc(
