@@ -14416,3 +14416,55 @@ input {
     font-size: 18px;
   }
 }
+
+.timeline {
+  display: grid;
+  grid-template-columns:
+    repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.timeline-cancelled {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid
+    rgba(180, 53, 79, 0.2);
+  border-radius: 12px;
+  background:
+    rgba(180, 53, 79, 0.08);
+  color: var(--berry);
+}
+
+.timeline-cancelled > i {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--berry);
+  color: white;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.timeline-cancelled div {
+  display: grid;
+  gap: 3px;
+}
+
+.timeline-cancelled small {
+  color: var(--muted);
+}
+
+@media (max-width: 800px) {
+  .timeline {
+    grid-template-columns:
+      repeat(6, minmax(120px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+}

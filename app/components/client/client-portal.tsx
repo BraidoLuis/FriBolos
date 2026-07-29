@@ -2057,7 +2057,10 @@ export function ClientPortal({
                   </div>
 
                   <OrderTimeline
-                    status={latestOrderStatus}
+                    status={
+                      latestOrder?.status ||
+                      "pending"
+                    }
                     paid={latestOrderPaid}
                   />
                 </>
