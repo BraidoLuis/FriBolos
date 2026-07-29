@@ -669,6 +669,37 @@ export function Login({
   );
 }
 
+function formatPhone(
+  value: string
+) {
+  const digits = value
+    .replace(/\D/g, "")
+    .slice(0, 11);
+
+  if (!digits) {
+    return "";
+  }
+
+  if (digits.length <= 2) {
+    return `(${digits}`;
+  }
+
+  if (digits.length <= 7) {
+    return `(${digits.slice(
+      0,
+      2
+    )}) ${digits.slice(2)}`;
+  }
+
+  return `(${digits.slice(
+    0,
+    2
+  )}) ${digits.slice(
+    2,
+    7
+  )}-${digits.slice(7)}`;
+}
+
 function Signup({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState(1);
   const [created, setCreated] = useState(false);
@@ -729,6 +760,19 @@ function Signup({ onBack }: { onBack: () => void }) {
     if (!name || !email || !phone || !birthDate) {
       setError("Preencha todos os dados pessoais.");
       setStep(1);
+      return;
+    }
+
+    const phonePattern =
+      /^\(\d{2}\) \d{5}-\d{4}$/;
+
+    if (!phonePattern.test(phone)) {
+      setError(
+        "Informe um telefone válido no formato (22) 99999-9999."
+      );
+
+      setStep(1);
+
       return;
     }
 
@@ -968,9 +1012,20 @@ function Signup({ onBack }: { onBack: () => void }) {
 
                 <input
                   required={step === 1}
+                  type="tel"
                   name="phone"
+                  inputMode="numeric"
+                  maxLength={15}
                   placeholder="(22) 99999-9999"
                   autoComplete="tel"
+                  pattern="\(\d{2}\) \d{5}-\d{4}"
+                  title="Informe o telefone no formato (22) 99999-9999"
+                  onInput={event => {
+                    event.currentTarget.value =
+                      formatPhone(
+                        event.currentTarget.value
+                      );
+                  }}
                 />
               </label>
             </div>
