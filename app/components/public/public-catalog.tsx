@@ -376,7 +376,7 @@ export function PublicCatalog() {
             <span>♨</span>
             <h3>Preparando o catálogo...</h3>
             <p>
-              Aguarde enquanto carregamos nossas
+              Aguarde enquanto estamos carregamos nossas
               delícias.
             </p>
           </div>
