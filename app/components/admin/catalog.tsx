@@ -633,11 +633,11 @@ export function Catalog({ products, onChange, onToast }: { products: Product[]; 
         imageUrl = publicImageData.publicUrl;
       }
 
-      const optionNames = String(
-        data.get("options") || ""
-      )
-        .split(",")
-        .map(option => option.trim())
+      const optionNames = data
+        .getAll("options")
+        .map(option =>
+          String(option).trim()
+        )
         .filter(Boolean);
 
       const isFeatured =
@@ -915,11 +915,11 @@ export function Catalog({ products, onChange, onToast }: { products: Product[]; 
         .from("product-images")
         .getPublicUrl(uploadedImagePath);
 
-      const options = String(
-        data.get("options") || ""
-      )
-        .split(",")
-        .map(option => option.trim())
+      const options = data
+        .getAll("options")
+        .map(option =>
+          String(option).trim()
+        )
         .filter(Boolean);
 
       const isFeatured =
@@ -1151,7 +1151,7 @@ export function Catalog({ products, onChange, onToast }: { products: Product[]; 
             <div className="modal-title"><div><p>{editing ? "EDITAR PRODUTO" : "NOVO PRODUTO"}</p><h2>{editing ? "Atualizar catálogo" : "Adicionar ao catálogo"}</h2></div><button type="button" onClick={() => setOpen(false)}>×</button></div>
             <div className="product-form-layout">
               <label className="image-upload">
-                {image ? <img src={image} alt="Prévia" /> : <><span>▧</span><b>Adicionar foto</b><small>PNG ou JPG</small></>}
+                {image ? <img src={image} alt="Prévia" /> : <><span>▧</span><b>Adicionar foto</b><small>PNG, JPG ou WEBP — máximo de 5 MB</small></>}
                 <input required={!editing} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImage}/>
               </label>
               <div className="form-grid compact-form">
@@ -1166,7 +1166,67 @@ export function Catalog({ products, onChange, onToast }: { products: Product[]; 
             </div>
             <div className="form-grid product-description">
               <label className="wide">Descrição<textarea required name="description" defaultValue={editing?.description} /></label>
-              <label className="wide">Opções de personalização<input name="options" defaultValue={editing?.options.join(", ")} placeholder="Tamanho, recheio, decoração" /></label>
+              <label className="wide">
+                Opções de personalização
+
+                <select
+                  multiple
+                  size={3}
+                  name="options"
+                  defaultValue={
+                    (editing?.options || []).map(
+                      option => {
+                        const normalizedOption =
+                          option
+                            .trim()
+                            .toLowerCase();
+
+                        if (
+                          normalizedOption ===
+                          "tamanho"
+                        ) {
+                          return "Tamanho";
+                        }
+
+                        if (
+                          normalizedOption ===
+                          "recheio"
+                        ) {
+                          return "Recheio";
+                        }
+
+                        if (
+                          normalizedOption ===
+                            "decoração" ||
+                          normalizedOption ===
+                            "decoracao"
+                        ) {
+                          return "Decoração";
+                        }
+
+                        return option;
+                      }
+                    )
+                  }
+                >
+                  <option value="Tamanho">
+                    Tamanho
+                  </option>
+
+                  <option value="Recheio">
+                    Recheio
+                  </option>
+
+                  <option value="Decoração">
+                    Decoração
+                  </option>
+                </select>
+
+                <small>
+                  Selecione uma ou mais opções. Use Ctrl
+                  para selecionar várias no computador.
+                </small>
+              </label>
             </div>
             <div className="product-checks">
               <label><input name="active" type="checkbox" defaultChecked={editing?.active ?? true} /> Publicar</label>

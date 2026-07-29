@@ -8,6 +8,8 @@ import {
 
 import { supabase } from "../../lib/supabase";
 
+import Link from "next/link";
+
 import {
   mapProduct,
 } from "../../lib/mappers";
@@ -212,12 +214,12 @@ export function PublicCatalog() {
         <div className="public-catalog-actions">
           <ThemeToggle />
 
-          <a
+          <Link
             href="/"
             className="public-catalog-login"
           >
             Entrar
-          </a>
+          </Link>
         </div>
       </header>
 
@@ -245,12 +247,12 @@ export function PublicCatalog() {
               <span>↓</span>
             </a>
 
-            <a
+            <Link
               href="/"
               className="secondary"
             >
               Entrar para encomendar
-            </a>
+            </Link>
           </div>
 
           <div className="public-catalog-benefits">
@@ -495,7 +497,7 @@ export function PublicCatalog() {
                         </strong>
                       </div>
 
-                      <a
+                      <Link
                         href="/"
                         className={
                           product.stock === 0
@@ -516,7 +518,7 @@ export function PublicCatalog() {
                         {product.stock === 0
                           ? "Esgotado"
                           : "Encomendar"}
-                      </a>
+                      </Link>
                     </footer>
                   </div>
                 </article>
@@ -568,10 +570,10 @@ export function PublicCatalog() {
           </article>
         </div>
 
-        <a href="/">
+        <Link href="/">
           Entrar ou criar minha conta
           <span>→</span>
-        </a>
+        </Link>
       </section>
 
       <footer className="public-catalog-footer">
@@ -597,9 +599,9 @@ export function PublicCatalog() {
           Todos os direitos reservados.
         </p>
 
-        <a href="/">
+        <Link href="/">
           Área do cliente
-        </a>
+        </Link>
       </footer>
     </main>
   );

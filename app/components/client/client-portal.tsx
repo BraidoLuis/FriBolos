@@ -39,6 +39,7 @@ import {
   getInitials,
   money,
   orderStatusLabel,
+  maximumQuoteDate,
   todayInputDate,
 } from "../../lib/formatters";
 
@@ -915,12 +916,51 @@ export function ClientPortal({
       data.get("date") || ""
     );
 
-    if (
-      desiredDate &&
-      desiredDate < todayInputDate()
-    ) {
+    const minimumDate =
+      todayInputDate();
+
+    const maximumDate =
+      maximumQuoteDate();
+
+    if (!desiredDate) {
+      setQuoteError(
+        "Informe a data desejada para a encomenda."
+      );
+
+      return;
+    }
+
+    if (desiredDate < minimumDate) {
       setQuoteError(
         "A data desejada não pode ser anterior a hoje."
+      );
+
+      return;
+    }
+
+    if (desiredDate > maximumDate) {
+      setQuoteError(
+        "A data desejada deve estar dentro do período máximo de um ano."
+      );
+
+      return;
+    }
+
+    if (!selectedProduct) {
+      setQuoteError(
+        "Selecione um produto personalizável."
+      );
+
+      return;
+    }
+
+    if (
+      !selectedProduct.active ||
+      selectedProduct.archived ||
+      !selectedProduct.customizable
+    ) {
+      setQuoteError(
+        "O produto selecionado não está disponível para orçamento."
       );
 
       return;
@@ -935,14 +975,32 @@ export function ClientPortal({
         ? referenceImageValue
         : null;
 
-    const productType = String(
-      data.get("productType") ||
-        "Pedido personalizado"
-    );
+    const productType =
+      selectedProduct.name;
 
     const people = String(
       data.get("people") || ""
     );
+
+    const peopleNumber =
+      Number(people);
+
+    if (
+      people &&
+      (
+        !Number.isInteger(
+          peopleNumber
+        ) ||
+        peopleNumber < 1 ||
+        peopleNumber > 500
+      )
+    ) {
+      setQuoteError(
+        "A quantidade de pessoas deve estar entre 1 e 500."
+      );
+
+      return;
+    }
 
     const baseDetails = String(
       data.get("details") || ""
@@ -1074,9 +1132,7 @@ export function ClientPortal({
       } = await supabase.rpc(
         "create_quote_request",
         {
-          p_title:
-            productType ||
-            "Pedido personalizado",
+          p_title: productType,
           p_details: completeDetails,
           p_desired_date:
             String(data.get("date") || "") ||
@@ -1086,6 +1142,10 @@ export function ClientPortal({
             null,
           p_reference_image_url:
             uploadedImagePath,
+          p_people_count:
+            people
+              ? peopleNumber
+              : null,
         }
       );
 
@@ -2590,6 +2650,7 @@ export function ClientPortal({
                   Tipo de produto
 
                   <select
+                  required
                     name="productType"
                     value={
                       selectedProduct?.name || ""
@@ -2606,11 +2667,16 @@ export function ClientPortal({
                     }}
                   >
                     <option value="">
-                      Pedido personalizado
+                      Selecione um produto Personalizável
                     </option>
 
                     {products
-                      .filter(product => product.active)
+                      .filter(
+                        product =>
+                          product.active &&
+                          !product.archived &&
+                          product.customizable
+                      )
                       .map(product => (
                         <option
                           key={product.id}
@@ -2629,8 +2695,15 @@ export function ClientPortal({
                     name="people"
                     type="number"
                     min="1"
+                    max="500"
+                    step="1"
+                    inputMode="numeric"
                     placeholder="Ex.: 30"
                   />
+
+                  <small>
+                    Informe uma quantidade entre 1 e 500 pessoas.
+                  </small>
                 </label>
 
                 {selectedProduct?.customizable &&
@@ -2699,7 +2772,13 @@ export function ClientPortal({
                     name="date"
                     type="date"
                     min={todayInputDate()}
+                    max={maximumQuoteDate()}
                   />
+
+                  <small>
+                    Escolha uma data entre hoje e, no máximo,
+                    um ano.
+                  </small>
                 </label>
 
                 <label>
