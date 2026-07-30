@@ -6,6 +6,8 @@ import {
 } from "react";
 
 import type {
+  AppNotification,
+  ClientSection,
   Screen,
 } from "./types";
 
@@ -30,6 +32,14 @@ import { AdminContent } from "./components/admin/admin-content";
 export default function Home() {
   const [screen, setScreen] =
     useState<Screen>("Visão geral");
+
+  const [
+    clientNavigationRequest,
+    setClientNavigationRequest,
+  ] = useState<{
+    section: ClientSection;
+    id: number;
+  } | null>(null);
 
   useEffect(() => {
     const savedScreen =
@@ -200,6 +210,92 @@ export default function Home() {
     setToast,
   });
 
+  function notificationTarget(
+    notification: AppNotification
+  ) {
+    return (
+      notification.relatedEntityType ||
+      notification.type ||
+      "general"
+    ).toLowerCase();
+  }
+
+  function handleClientNotificationSelect(
+    notification: AppNotification
+  ) {
+    const target =
+      notificationTarget(notification);
+
+    const sections:
+      Record<string, ClientSection> = {
+        order: "pedidos",
+        orders: "pedidos",
+
+        quote: "orcamentos",
+        quotes: "orcamentos",
+
+        payment: "pagamento",
+        payments: "pagamento",
+
+        review: "avaliacao",
+        reviews: "avaliacao",
+
+        account: "perfil",
+        profile: "perfil",
+
+        product: "catalogo",
+        products: "catalogo",
+        stock: "catalogo",
+
+        general: "catalogo",
+      };
+
+    setClientNavigationRequest({
+      section:
+        sections[target] ||
+        "catalogo",
+
+      id: Date.now(),
+    });
+  }
+
+  function handleAdminNotificationSelect(
+    notification: AppNotification
+  ) {
+    const target =
+      notificationTarget(notification);
+
+    const screens:
+      Record<string, Screen> = {
+        order: "Pedidos",
+        orders: "Pedidos",
+
+        quote: "Orçamentos",
+        quotes: "Orçamentos",
+
+        payment: "Financeiro",
+        payments: "Financeiro",
+
+        product: "Cardápio",
+        products: "Cardápio",
+
+        stock: "Estoque",
+
+        review: "Visão geral",
+        reviews: "Visão geral",
+
+        account: "Clientes",
+        profile: "Clientes",
+
+        general: "Visão geral",
+      };
+
+    setScreen(
+      screens[target] ||
+      "Visão geral"
+    );
+  }
+
   /*
    * Enquanto o Supabase verifica a sessão,
    * não mostra o login nem os painéis.
@@ -255,6 +351,10 @@ export default function Home() {
           userProfile={profile}
           onProfileChange={setProfile}
 
+          navigationRequest={
+            clientNavigationRequest
+          }
+
           products={products.filter(
             product => !product.archived
           )}
@@ -279,7 +379,15 @@ export default function Home() {
             setNotificationsOpen(true)
           }
 
-          onLogout={handleLogout}
+          onLogout={async () => {
+            sessionStorage.removeItem(
+              "fribolos-client-section"
+            );
+
+            setClientNavigationRequest(null);
+
+            await handleLogout();
+          }}
         />
 
         {notificationsOpen && (
@@ -290,6 +398,9 @@ export default function Home() {
               setNotificationsOpen(false)
             }
             onRead={handleMarkNotificationsAsRead}
+            onSelect={
+              handleClientNotificationSelect
+            }
           />
         )}
       </>
@@ -350,7 +461,15 @@ export default function Home() {
             );
           }}
 
-          onLogout={handleLogout}
+          onLogout={async () => {
+            sessionStorage.removeItem(
+              "fribolos-client-section"
+            );
+
+            setClientNavigationRequest(null);
+
+            await handleLogout();
+          }}
         />
 
         <AdminContent
@@ -444,6 +563,9 @@ export default function Home() {
             setNotificationsOpen(false)
           }
           onRead={handleMarkNotificationsAsRead}
+          onSelect={
+            handleAdminNotificationSelect
+          }
         />
       )}
 

@@ -13,11 +13,16 @@ export function NotificationPanel({
   loading,
   onClose,
   onRead,
+  onSelect,
 }: {
   items: AppNotification[];
   loading: boolean;
   onClose: () => void;
   onRead: () => void;
+
+  onSelect?: (
+    notification: AppNotification
+  ) => void;
 }) {
   function notificationDate(
     createdAt: string
@@ -151,20 +156,37 @@ export function NotificationPanel({
         <>
           <div>
             {items.map(item => (
-              <article
+              <button
+                type="button"
                 key={item.id}
-                className={
+                className={[
+                  "notification-item",
                   item.isRead
                     ? "notification-read"
-                    : "notification-unread"
-                }
+                    : "notification-unread",
+                  onSelect
+                    ? "notification-clickable"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => {
+                  if (!onSelect) {
+                    return;
+                  }
+
+                  onSelect(item);
+                  onClose();
+                }}
+                aria-label={`Abrir notificação: ${item.title}`}
               >
-                <span>
+                <span className="notification-item-icon">
                   {notificationIcon(item.type)}
                 </span>
 
-                <div>
+                <div className="notification-item-content">
                   <b>{item.title}</b>
+
                   <p>{item.message}</p>
 
                   <small>
@@ -173,7 +195,16 @@ export function NotificationPanel({
                     )}
                   </small>
                 </div>
-              </article>
+
+                {onSelect && (
+                  <span
+                    className="notification-item-arrow"
+                    aria-hidden="true"
+                  >
+                    →
+                  </span>
+                )}
+              </button>
             ))}
           </div>
 

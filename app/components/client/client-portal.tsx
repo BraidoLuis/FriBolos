@@ -62,6 +62,7 @@ import { ClientCatalog } from "./client-catalog";
 export function ClientPortal({
   userProfile,
   onProfileChange,
+  navigationRequest,
   products,
   quotes,
   storeSettings,
@@ -76,6 +77,11 @@ export function ClientPortal({
   onProfileChange: (
     profile: UserProfile
   ) => void;
+
+  navigationRequest: {
+    section: ClientSection;
+    id: number;
+  } | null;
 
   products: Product[];
   quotes: Quote[];
@@ -95,7 +101,7 @@ export function ClientPortal({
   const userName =
   userProfile.full_name || "Cliente";
   const [section, setSection] =
-  useState<ClientSection>("inicio");
+  useState<ClientSection>("catalogo");
   const [clientOrders, setClientOrders] =
     useState<ClientOrderRow[]>([]);
 
@@ -1564,6 +1570,18 @@ export function ClientPortal({
 
     return success;
   }
+
+  useEffect(() => {
+    if (!navigationRequest) {
+      return;
+    }
+
+    setSection(
+      navigationRequest.section
+    );
+
+    setCartOpen(false);
+  }, [navigationRequest]);
 
   return (
     <main className="client-portal">
