@@ -1576,11 +1576,18 @@ export function ClientPortal({
       return;
     }
 
-    setSection(
-      navigationRequest.section
-    );
+    const timer =
+      window.setTimeout(() => {
+        setSection(
+          navigationRequest.section
+        );
 
-    setCartOpen(false);
+        setCartOpen(false);
+      }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [navigationRequest]);
 
   return (

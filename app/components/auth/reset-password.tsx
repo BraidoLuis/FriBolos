@@ -7,6 +7,10 @@ import {
 
 import { supabase } from "../../lib/supabase";
 
+import {
+  passwordValidationError,
+} from "../../lib/validator";
+
 export function ResetPassword({
   onComplete,
 }: {
@@ -17,6 +21,16 @@ export function ResetPassword({
 
   const [error, setError] =
     useState("");
+
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
+
+  const [
+    showConfirmation,
+    setShowConfirmation,
+  ] = useState(false);
 
   async function updatePassword(
     e: FormEvent<HTMLFormElement>
@@ -37,21 +51,24 @@ export function ResetPassword({
 
     setError("");
 
-    if (password.length < 6) {
-      setError(
-        "A senha deve possuir pelo menos 6 caracteres."
-      );
+    const passwordError =
+      passwordValidationError(password);
+
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
     if (password !== confirmation) {
       setError(
-        "As senhas informadas não coincidem."
+        "As senhas não coincidem."
       );
       return;
     }
 
     setLoading(true);
+
+    
 
     try {
       const {
@@ -123,13 +140,45 @@ export function ResetPassword({
 
               <input
                 required
-                minLength={6}
-                type="password"
+                minLength={8}
+                maxLength={72}
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
                 name="password"
-                placeholder="Mínimo de 6 caracteres"
+                placeholder="Crie uma senha segura"
                 autoComplete="new-password"
               />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword(
+                    currentValue =>
+                      !currentValue
+                  )
+                }
+                aria-label={
+                  showPassword
+                    ? "Ocultar nova senha"
+                    : "Mostrar nova senha"
+                }
+                title={
+                  showPassword
+                    ? "Ocultar senha"
+                    : "Mostrar senha"
+                }
+              >
+                {showPassword ? "◉" : "◎"}
+              </button>
             </div>
+
+            <small>
+              Use de 8 a 72 caracteres, com letra
+              maiúscula, minúscula e número.
+            </small>
           </label>
 
           <label className="login-label">
@@ -140,12 +189,41 @@ export function ResetPassword({
 
               <input
                 required
-                minLength={6}
-                type="password"
+                minLength={8}
+                maxLength={72}
+                type={
+                  showConfirmation
+                    ? "text"
+                    : "password"
+                }
                 name="confirmation"
                 placeholder="Repita sua nova senha"
                 autoComplete="new-password"
               />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowConfirmation(
+                    currentValue =>
+                      !currentValue
+                  )
+                }
+                aria-label={
+                  showConfirmation
+                    ? "Ocultar confirmação da senha"
+                    : "Mostrar confirmação da senha"
+                }
+                title={
+                  showConfirmation
+                    ? "Ocultar senha"
+                    : "Mostrar senha"
+                }
+              >
+                {showConfirmation
+                  ? "◉"
+                  : "◎"}
+              </button>
             </div>
           </label>
 

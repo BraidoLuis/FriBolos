@@ -442,6 +442,10 @@ export function PublicCatalog() {
                       product={product}
                     />
 
+                    <span className="illustrative-image-label">
+                      Imagem meramente ilustrativa
+                    </span>
+
                     <div className="public-product-badges">
                       {product.featured && (
                         <span className="featured">

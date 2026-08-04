@@ -424,6 +424,10 @@ export function ClientCatalog({
                       product={product}
                     />
 
+                    <span className="illustrative-image-label">
+                      Imagem meramente ilustrativa
+                    </span>
+
                     <div className="catalog-card-badges">
                       {product.featured && (
                         <span className="catalog-featured-badge">

@@ -10,6 +10,10 @@ import { LoginReviewsCarousel } from "./login-reviews-carousel";
 import { supabase } from "../../lib/supabase";
 
 import {
+  passwordValidationError,
+} from "../../lib/validator";
+
+import {
   maximumBirthDate,
   formatZipCode,
   minimumBirthDate,
@@ -713,6 +717,15 @@ function Signup({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(false);
   const [registeredEmail, setRegisteredEmail] =
     useState("");
+  const [
+    showSignupPassword,
+    setShowSignupPassword,
+  ] = useState(false);
+
+  const [
+    showSignupConfirmation,
+    setShowSignupConfirmation,
+  ] = useState(false);
 
   function validatePersonalData(
     form: HTMLFormElement
@@ -978,64 +991,16 @@ function Signup({ onBack }: { onBack: () => void }) {
     const acceptedTerms =
       data.get("terms") === "on";
 
-    if (
-      !password ||
-      !confirmPassword
-    ) {
-      setError(
-        "Preencha e confirme sua senha."
-      );
+    const passwordError =
+      passwordValidationError(password);
+
+    if (passwordError) {
+      setError(passwordError);
 
       return false;
     }
 
-    if (
-      password.length < 8 ||
-      password.length > 72
-    ) {
-      setError(
-        "A senha deve possuir entre 8 e 72 caracteres."
-      );
-
-      return false;
-    }
-
-    if (/\s/.test(password)) {
-      setError(
-        "A senha não pode conter espaços."
-      );
-
-      return false;
-    }
-
-    if (!/[a-z]/.test(password)) {
-      setError(
-        "A senha deve possuir pelo menos uma letra minúscula."
-      );
-
-      return false;
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      setError(
-        "A senha deve possuir pelo menos uma letra maiúscula."
-      );
-
-      return false;
-    }
-
-    if (!/\d/.test(password)) {
-      setError(
-        "A senha deve possuir pelo menos um número."
-      );
-
-      return false;
-    }
-
-    if (
-      password !==
-      confirmPassword
-    ) {
+    if (password !== confirmPassword) {
       setError(
         "As senhas não coincidem."
       );
@@ -1523,18 +1488,48 @@ function Signup({ onBack }: { onBack: () => void }) {
             <label>
               Senha
 
-              <input
-                required={step === 3}
-                minLength={8}
-                maxLength={72}
-                type="password"
-                name="password"
-                placeholder="Crie uma senha segura"
-                autoComplete="new-password"
-              />
+              <div className="account-password-field">
+                <input
+                  required={step === 3}
+                  minLength={8}
+                  maxLength={72}
+                  type={
+                    showSignupPassword
+                      ? "text"
+                      : "password"
+                  }
+                  name="password"
+                  placeholder="Crie uma senha segura"
+                  autoComplete="new-password"
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowSignupPassword(
+                      currentValue =>
+                        !currentValue
+                    )
+                  }
+                  aria-label={
+                    showSignupPassword
+                      ? "Ocultar senha"
+                      : "Mostrar senha"
+                  }
+                  title={
+                    showSignupPassword
+                      ? "Ocultar senha"
+                      : "Mostrar senha"
+                  }
+                >
+                  {showSignupPassword
+                    ? "◉"
+                    : "◎"}
+                </button>
+              </div>
 
               <small>
-                Use pelo menos 8 caracteres, com letra
+                Use de 8 a 72 caracteres, com letra
                 maiúscula, minúscula e número.
               </small>
             </label>
@@ -1542,15 +1537,45 @@ function Signup({ onBack }: { onBack: () => void }) {
             <label>
               Confirmar senha
 
-              <input
-                required={step === 3}
-                minLength={8}
-                maxLength={72}
-                type="password"
-                name="confirm"
-                placeholder="Repita sua senha"
-                autoComplete="new-password"
-              />
+              <div className="account-password-field">
+                <input
+                  required={step === 3}
+                  minLength={8}
+                  maxLength={72}
+                  type={
+                    showSignupConfirmation
+                      ? "text"
+                      : "password"
+                  }
+                  name="confirm"
+                  placeholder="Repita sua senha"
+                  autoComplete="new-password"
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowSignupConfirmation(
+                      currentValue =>
+                        !currentValue
+                    )
+                  }
+                  aria-label={
+                    showSignupConfirmation
+                      ? "Ocultar confirmação"
+                      : "Mostrar confirmação"
+                  }
+                  title={
+                    showSignupConfirmation
+                      ? "Ocultar confirmação"
+                      : "Mostrar confirmação"
+                  }
+                >
+                  {showSignupConfirmation
+                    ? "◉"
+                    : "◎"}
+                </button>
+              </div>
             </label>
 
             <label className="accept-terms">
