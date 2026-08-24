@@ -16,11 +16,10 @@ const eslintConfig = defineConfig([
   globalIgnores([
     ".next/**",
     "out/**",
+    ".output/**",
     "build/**",
     "dist/**",
     ".vercel/**",
-    ".sites-runtime/**",
-    ".wrangler/**",
     "next-env.d.ts",
   ]),
 ]);

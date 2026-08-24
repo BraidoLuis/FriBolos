@@ -37,9 +37,7 @@ yarn-error.log*
 next-env.d.ts
 *.tsbuildinfo
 /dist/
-/.wrangler/
-/.sites-runtime/
-/outputs/
+/.output/
 /work/
 
 # Vinext
