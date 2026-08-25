@@ -584,7 +584,7 @@ export function Login({
                     : "Mostrar senha"
                 }
               >
-                {showPassword ? "◉" : "◎"}
+                {showPassword ? "Ocultar" : "Exibir"}
               </button>
             </div>
           </label>
@@ -1523,8 +1523,8 @@ function Signup({ onBack }: { onBack: () => void }) {
                   }
                 >
                   {showSignupPassword
-                    ? "◉"
-                    : "◎"}
+                    ? "Ocultar"
+                    : "Exibir"}
                 </button>
               </div>
 
@@ -1572,8 +1572,8 @@ function Signup({ onBack }: { onBack: () => void }) {
                   }
                 >
                   {showSignupConfirmation
-                    ? "◉"
-                    : "◎"}
+                    ? "Ocultar"
+                    : "Exibir"}
                 </button>
               </div>
             </label>

@@ -171,7 +171,7 @@ export function ResetPassword({
                     : "Mostrar senha"
                 }
               >
-                {showPassword ? "◉" : "◎"}
+                {showPassword ? "Ocultar" : "Exibir"}
               </button>
             </div>
 
@@ -221,8 +221,8 @@ export function ResetPassword({
                 }
               >
                 {showConfirmation
-                  ? "◉"
-                  : "◎"}
+                  ? "Ocultar"
+                  : "Exibir"}
               </button>
             </div>
           </label>
