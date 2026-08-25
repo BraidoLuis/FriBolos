@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Disallow: /?access=
+Disallow: /?entrar=
+
+Sitemap: https://fri-bolos.vercel.app/sitemap.xml

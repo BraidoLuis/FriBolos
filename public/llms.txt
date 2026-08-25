@@ -1,0 +1,36 @@
+# FriBolos
+
+> Online platform for an artisan bakery offering a public catalog, custom orders, quotes, payments, and order tracking.
+
+FriBolos creates artisan products for special moments. Visitors can learn about the bakery and browse its public catalog. Registered customers can place orders, request custom quotes, make payments, and track their orders.
+
+## Public pages
+
+- [Home](https://fri-bolos.vercel.app/): FriBolos presentation, featured products, customer reviews, frequently asked questions, and contact information.
+- [Catalog](https://fri-bolos.vercel.app/catalogo): available products, starting prices, categories, descriptions, preparation details, and availability.
+- [Privacy Policy](https://fri-bolos.vercel.app/politica-de-privacidade): information about the collection, use, storage, and protection of personal data.
+- [Terms of Use](https://fri-bolos.vercel.app/termos-de-uso): platform usage conditions and rules for products, orders, payments, delivery, pickup, cancellations, and refunds.
+
+## Services
+
+- Public product catalog.
+- Artisan product orders.
+- Custom quote requests.
+- Delivery or pickup, subject to availability.
+- Online payments.
+- Order tracking.
+- Verified purchase reviews.
+
+## Important information
+
+- Product images may be illustrative.
+- Artisan products may present minor variations.
+- Prices, inventory, and availability may change.
+- Custom orders require analysis and confirmation.
+- Some features require registration and authentication.
+- Official and current information must be verified directly on the website.
+
+## Legal documents
+
+- [Privacy Policy](https://fri-bolos.vercel.app/politica-de-privacidade)
+- [Terms of Use](https://fri-bolos.vercel.app/termos-de-uso)
