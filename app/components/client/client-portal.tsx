@@ -59,6 +59,8 @@ import { Review } from "./review";
 import { ClientQuotes } from "./client-quotes";
 import { ClientCatalog } from "./client-catalog";
 
+const QUOTE_DETAILS_MAX_LENGTH = 300;
+
 export function ClientPortal({
   userProfile,
   onProfileChange,
@@ -1018,8 +1020,27 @@ export function ClientPortal({
     }
 
     const baseDetails = String(
-      data.get("details") || ""
-    ).trim();
+          data.get("details") || ""
+        ).trim();
+
+        if (!baseDetails) {
+      setQuoteError(
+        "Informe o tema, os sabores e os detalhes da encomenda."
+      );
+
+      return;
+    }
+
+    if (
+      baseDetails.length >
+      QUOTE_DETAILS_MAX_LENGTH
+    ) {
+      setQuoteError(
+        `Os detalhes devem possuir no máximo ${QUOTE_DETAILS_MAX_LENGTH} caracteres.`
+      );
+
+      return;
+    }
 
     const customizationDetails =
       selectedProduct?.options
@@ -2732,12 +2753,17 @@ export function ClientPortal({
 
                   <input
                     name="people"
-                    type="number"
-                    min="1"
-                    max="500"
-                    step="1"
+                    type="text"
                     inputMode="numeric"
+                    pattern="[0-9]{1,3}"
+                    maxLength={3}
                     placeholder="Ex.: 30"
+                    onInput={event => {
+                      event.currentTarget.value =
+                        event.currentTarget.value
+                          .replace(/\D/g, "")
+                          .slice(0, 3);
+                    }}
                   />
 
                   <small>
@@ -2836,8 +2862,16 @@ export function ClientPortal({
                   <textarea
                     required
                     name="details"
+                    maxLength={
+                      QUOTE_DETAILS_MAX_LENGTH
+                    }
                     placeholder="Conte como você imagina sua encomenda..."
                   />
+
+                  <small>
+                    Máximo de{" "}
+                    {QUOTE_DETAILS_MAX_LENGTH} caracteres.
+                  </small>
                 </label>
 
                 <label className="wide">
