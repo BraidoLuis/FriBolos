@@ -3657,11 +3657,13 @@ td:first-child {
 
 .quote-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
 .quote-card {
+  min-width: 0;
   padding: 24px;
 }
 
@@ -3698,6 +3700,13 @@ td:first-child {
   color: var(--muted);
   line-height: 1.6;
   min-height: 45px;
+}
+
+.quote-card-details {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .quote-card footer {
@@ -11714,10 +11723,14 @@ article.attention
 }
 
 .client-quote-details {
+  max-width: 100%;
   margin: 0;
   color: var(--muted);
   font-size: 11px;
   line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .client-quote-date {

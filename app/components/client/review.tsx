@@ -13,7 +13,8 @@ import type {
 import {
   formatDeliveryDate,
 } from "../../lib/formatters";
-
+const REVIEW_COMMENT_MAX_LENGTH =
+  200;
 const ratingLabels: Record<
   number,
   string
@@ -431,15 +432,16 @@ export function Review({
             <span>
               <b>Conte como foi</b>
 
-              <small>
-                {comment.length}/2000
-              </small>
+            <small>
+              {comment.length}/
+              {REVIEW_COMMENT_MAX_LENGTH}
+            </small>
             </span>
 
             <textarea
               required
               minLength={3}
-              maxLength={2000}
+              maxLength={REVIEW_COMMENT_MAX_LENGTH}
               name="comment"
               value={comment}
               onChange={event =>
@@ -450,62 +452,6 @@ export function Review({
               placeholder="Conte sobre o sabor, a apresentação, o atendimento e o que mais chamou sua atenção..."
             />
           </label>
-
-          <div className="review-suggestions">
-            <span>
-              Você pode comentar sobre:
-            </span>
-
-            <div>
-              <button
-                type="button"
-                onClick={() =>
-                  setComment(current =>
-                    current ||
-                    "O sabor estava "
-                  )
-                }
-              >
-                Sabor
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setComment(current =>
-                    current ||
-                    "A apresentação estava "
-                  )
-                }
-              >
-                Apresentação
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setComment(current =>
-                    current ||
-                    "O atendimento foi "
-                  )
-                }
-              >
-                Atendimento
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setComment(current =>
-                    current ||
-                    "A entrega foi "
-                  )
-                }
-              >
-                Entrega
-              </button>
-            </div>
-          </div>
 
           {error && (
             <p className="form-error review-form-error">

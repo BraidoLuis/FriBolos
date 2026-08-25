@@ -13,6 +13,9 @@ import {
   Status,
 } from "../ui";
 
+const CLIENT_QUOTE_DETAILS_MAX_LENGTH =
+  300;
+
 type QuoteFilter =
   | "all"
   | "awaiting"
@@ -460,14 +463,16 @@ export function ClientQuotes({
                         {quote.item}
                       </h2>
 
-                      <p
-                        className="client-quote-details"
-                        style={{
-                          whiteSpace:
-                            "pre-line",
-                        }}
-                      >
-                        {quote.details}
+                      <p className="client-quote-details">
+                        {quote.details.length >
+                        CLIENT_QUOTE_DETAILS_MAX_LENGTH
+                          ? `${quote.details
+                              .slice(
+                                0,
+                                CLIENT_QUOTE_DETAILS_MAX_LENGTH
+                              )
+                              .trimEnd()}…`
+                          : quote.details}
                       </p>
 
                       <div className="client-quote-date">

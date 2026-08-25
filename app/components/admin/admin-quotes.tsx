@@ -90,11 +90,7 @@ export function AdminQuotes({
 
               <h3>{quote.item}</h3>
 
-              <p
-                style={{
-                  whiteSpace: "pre-line",
-                }}
-              >
+              <p className="quote-card-details">
                 {quote.details}
               </p>
 
