@@ -510,9 +510,22 @@ export function PublicCatalog() {
           Todos os direitos reservados.
         </p>
 
-        <Link href="/?entrar=1">
-          Área do cliente
-        </Link>
+        <nav
+          className="public-catalog-footer-links"
+          aria-label="Links do rodapé"
+        >
+          <Link href="/?entrar=1">
+            Área do cliente
+          </Link>
+
+          <Link href="/politica-de-privacidade">
+            Política de Privacidade
+          </Link>
+
+          <Link href="/termos-de-uso">
+            Termos de Uso
+          </Link>
+        </nav>
       </footer>
     </main>
   );

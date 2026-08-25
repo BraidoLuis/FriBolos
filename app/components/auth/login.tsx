@@ -5,6 +5,8 @@ import {
   type FormEvent,
 } from "react";
 
+import Link from "next/link";
+
 import { LoginReviewsCarousel } from "./login-reviews-carousel";
 
 import { supabase } from "../../lib/supabase";
@@ -1590,6 +1592,28 @@ function Signup({ onBack }: { onBack: () => void }) {
                 Política de privacidade.
               </span>
             </label>
+
+            <p className="signup-legal-consent">
+              Ao criar sua conta, você declara que leu
+              e concorda com os{" "}
+
+              <Link
+                href="/termos-de-uso"
+                target="_blank"
+              >
+                Termos de Uso
+              </Link>
+
+              {" "}e com a{" "}
+
+              <Link
+                href="/politica-de-privacidade"
+                target="_blank"
+              >
+                Política de Privacidade
+              </Link>
+              .
+            </p>
 
             <div className="step-buttons">
               <button

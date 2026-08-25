@@ -14653,15 +14653,13 @@ input {
   position: absolute;
   right: 8px;
   display: grid;
-  width: 38px;
-  height: 38px;
   padding: 0;
   place-items: center;
   border: 0;
   border-radius: 9px;
   background: transparent;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -16074,5 +16072,67 @@ details[open] summary span {
 
   .legal-content h2 {
     font-size: 25px;
+  }
+}
+
+/* Links para documentos legais */
+
+.public-home-footer-legal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.public-home-footer-legal a {
+  color: inherit;
+  font-size: 11px;
+  text-decoration: none;
+  opacity: 0.78;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.public-home-footer-legal a:hover {
+  color: var(--wine);
+  opacity: 1;
+}
+
+.public-catalog-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 9px 18px;
+}
+
+.public-catalog-footer-links a {
+  color: inherit;
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.public-catalog-footer-links a:hover {
+  color: var(--wine);
+}
+
+.signup-legal-consent {
+  margin: 5px 0 17px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.signup-legal-consent a {
+  color: var(--wine);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .public-catalog-footer-links {
+    justify-content: center;
   }
 }

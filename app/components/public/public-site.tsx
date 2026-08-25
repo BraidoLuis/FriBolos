@@ -705,6 +705,18 @@ export function PublicSite({
             )}
         </div>
 
+        <div className="public-home-footer-legal">
+          <strong>Informações legais</strong>
+
+          <Link href="/politica-de-privacidade">
+            Política de Privacidade
+          </Link>
+
+          <Link href="/termos-de-uso">
+            Termos de Uso
+          </Link>
+        </div>
+
         <p className="public-home-copyright">
           © {new Date().getFullYear()}{" "}
           {storeName}. Todos os direitos
