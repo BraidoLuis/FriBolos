@@ -3,6 +3,10 @@ import type {
 } from "next";
 
 import {
+  CookieBanner,
+} from "./components/cookie-banner";
+
+import {
   ThemeProvider,
 } from "./contexts/theme-context";
 
@@ -112,6 +116,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           {children}
+          <CookieBanner />
         </ThemeProvider>
       </body>
     </html>
