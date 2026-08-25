@@ -28,10 +28,18 @@ import { AdminOrderModal } from "./components/admin/admin-order-modal";
 import { AdminSidebar } from "./components/admin/admin-sidebar";
 import { AdminTopbar } from "./components/admin/admin-topbar";
 import { AdminContent } from "./components/admin/admin-content";
+import {
+  PublicSite,
+} from "./components/public/public-site";
 
 export default function Home() {
   const [screen, setScreen] =
     useState<Screen>("Visão geral");
+
+  const [
+    showPublicLogin,
+    setShowPublicLogin,
+  ] = useState(false);
 
   const [
     clientNavigationRequest,
@@ -40,6 +48,31 @@ export default function Home() {
     section: ClientSection;
     id: number;
   } | null>(null);
+
+  useEffect(() => {
+    const searchParams =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const shouldOpenLogin =
+      searchParams.get("entrar") === "1" ||
+      searchParams.get("access") ===
+        "admin";
+
+    if (!shouldOpenLogin) {
+      return;
+    }
+
+    const timer =
+      window.setTimeout(() => {
+        setShowPublicLogin(true);
+      }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     const savedScreen =
@@ -104,9 +137,16 @@ export default function Home() {
   } = useAuth({
     setToast,
 
-    onLogoutSuccess: () => {
-      setScreen("Visão geral");
-    },
+  onLogoutSuccess: () => {
+    setScreen("Visão geral");
+    setShowPublicLogin(false);
+
+    window.history.replaceState(
+      null,
+      "",
+      "/"
+    );
+  },
   });
 
   const [mobileNav, setMobileNav] =
@@ -296,6 +336,26 @@ export default function Home() {
     );
   }
 
+  function openPublicLogin() {
+    window.history.replaceState(
+      null,
+      "",
+      "/?entrar=1"
+    );
+
+    setShowPublicLogin(true);
+  }
+
+  function closePublicLogin() {
+    window.history.replaceState(
+      null,
+      "",
+      "/"
+    );
+
+    setShowPublicLogin(false);
+  }
+
   /*
    * Enquanto o Supabase verifica a sessão,
    * não mostra o login nem os painéis.
@@ -336,8 +396,29 @@ export default function Home() {
    * Sem usuário autenticado, mostra o login.
    */
   if (!role) {
+    if (showPublicLogin) {
+      return (
+        <div className="public-login-view">
+          <button
+            type="button"
+            className="public-login-back"
+            onClick={closePublicLogin}
+          >
+            <span>←</span>
+            Voltar para o início
+          </button>
+
+          <Login
+            onLogin={handleLogin}
+          />
+        </div>
+      );
+    }
+
     return (
-      <Login onLogin={handleLogin} />
+      <PublicSite
+        onOpenLogin={openPublicLogin}
+      />
     );
   }
 

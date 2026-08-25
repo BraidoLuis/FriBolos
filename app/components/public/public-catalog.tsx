@@ -24,8 +24,8 @@ import type {
 } from "../../types";
 
 import {
-  ProductVisual,
-} from "../ui";
+  PublicProductCard,
+} from "./public-product-card";
 
 import {
   ThemeToggle,
@@ -215,7 +215,7 @@ export function PublicCatalog() {
           <ThemeToggle />
 
           <Link
-            href="/"
+            href="/?entrar=1"
             className="public-catalog-login"
           >
             Entrar
@@ -248,7 +248,7 @@ export function PublicCatalog() {
             </a>
 
             <Link
-              href="/"
+              href="/?entrar=1"
               className="secondary"
             >
               Entrar para encomendar
@@ -425,110 +425,17 @@ export function PublicCatalog() {
           )}
 
         {!loading &&
-          !error &&
-          visibleProducts.length > 0 && (
-            <div className="public-products-grid">
-              {visibleProducts.map(product => (
-                <article
-                  className={`public-product-card ${
-                    product.stock === 0
-                      ? "sold-out"
-                      : ""
-                  }`}
-                  key={product.id}
-                >
-                  <div className="public-product-visual">
-                    <ProductVisual
-                      product={product}
-                    />
-
-                    <span className="illustrative-image-label">
-                      Imagem meramente ilustrativa
-                    </span>
-
-                    <div className="public-product-badges">
-                      {product.featured && (
-                        <span className="featured">
-                          Destaque
-                        </span>
-                      )}
-
-                      {product.customizable && (
-                        <span>
-                          Personalizável
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="public-product-content">
-                    <small>
-                      {product.category}
-                    </small>
-
-                    <h3>{product.name}</h3>
-
-                    <p>
-                      {product.description}
-                    </p>
-
-                    <div className="public-product-meta">
-                      <span>
-                        ◷ {product.preparation}
-                      </span>
-
-                      <span
-                        className={
-                          product.stock === 0
-                            ? "unavailable"
-                            : ""
-                        }
-                      >
-                        {product.stock === 0
-                          ? "Indisponível"
-                          : "Disponível"}
-                      </span>
-                    </div>
-
-                    <footer>
-                      <div>
-                        <small>
-                          A partir de
-                        </small>
-
-                        <strong>
-                          {product.price}
-                        </strong>
-                      </div>
-
-                      <Link
-                        href="/"
-                        className={
-                          product.stock === 0
-                            ? "disabled"
-                            : ""
-                        }
-                        aria-disabled={
-                          product.stock === 0
-                        }
-                        onClick={event => {
-                          if (
-                            product.stock === 0
-                          ) {
-                            event.preventDefault();
-                          }
-                        }}
-                      >
-                        {product.stock === 0
-                          ? "Esgotado"
-                          : "Encomendar"}
-                      </Link>
-                    </footer>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
+        !error &&
+        visibleProducts.length > 0 && (
+          <div className="public-products-grid">
+            {visibleProducts.map(product => (
+              <PublicProductCard
+                key={product.id}
+                product={product}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       <section
@@ -574,7 +481,7 @@ export function PublicCatalog() {
           </article>
         </div>
 
-        <Link href="/">
+        <Link href="/?entrar=1">
           Entrar ou criar minha conta
           <span>→</span>
         </Link>
@@ -603,7 +510,7 @@ export function PublicCatalog() {
           Todos os direitos reservados.
         </p>
 
-        <Link href="/">
+        <Link href="/?entrar=1">
           Área do cliente
         </Link>
       </footer>
