@@ -469,39 +469,50 @@ describe(
     ).toEqual([]);
     });
 
-    it("limpa as notificações quando o carregamento falha", async () => {
-      mocks.limit.mockResolvedValue({
-        data: null,
+    it(
+      "limpa as notificações quando o carregamento falha",
+      async () => {
+        mocks.limit.mockResolvedValue({
+          data: null,
 
-        error: {
-          message:
-            "Falha ao consultar notificações",
-        },
-      });
+          error: {
+            message:
+              "Falha ao consultar notificações",
+          },
+        });
 
-      const {
-        result,
-      } = renderUseNotifications();
+        const {
+          result,
+        } = renderUseNotifications();
 
-      await waitFor(() => {
+        await waitFor(() => {
+          expect(
+            mocks.limit
+          ).toHaveBeenCalledOnce();
+        });
+
+        /*
+        * O console.error acontece somente
+        * depois que a Promise da consulta
+        * retorna o erro. Assim, aguardamos
+        * o fluxo assíncrono terminar de fato.
+        */
+        await waitFor(() => {
+          expect(
+            console.error
+          ).toHaveBeenCalled();
+
+          expect(
+            result.current
+              .notificationsLoading
+          ).toBe(false);
+        });
+
         expect(
-          mocks.limit
-        ).toHaveBeenCalledOnce();
-      });
-
-      expect(
-        result.current.notifications
-      ).toEqual([]);
-
-      expect(
-        result.current
-          .notificationsLoading
-      ).toBe(false);
-
-      expect(
-        console.error
-      ).toHaveBeenCalled();
-    });
+          result.current.notifications
+        ).toEqual([]);
+      }
+    );
 
     it("mantém o estado de carregamento enquanto a consulta está pendente", async () => {
       let resolveLoad:
