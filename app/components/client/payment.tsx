@@ -17,6 +17,63 @@ import type {
 
 import { Status } from "../ui";
 
+const DELIVERY_ADDRESS_MIN_LENGTH = 15;
+const DELIVERY_ADDRESS_MAX_LENGTH = 250;
+
+function normalizeDeliveryAddress(
+  address: string
+) {
+  return address
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function deliveryAddressValidationError(
+  address: string
+): string | null {
+  const normalizedAddress =
+    normalizeDeliveryAddress(address);
+
+  if (!normalizedAddress) {
+    return "Informe o endereço para entrega.";
+  }
+
+  if (
+    normalizedAddress.length <
+    DELIVERY_ADDRESS_MIN_LENGTH
+  ) {
+    return "Informe um endereço mais completo, incluindo rua, número e bairro.";
+  }
+
+  if (
+    normalizedAddress.length >
+    DELIVERY_ADDRESS_MAX_LENGTH
+  ) {
+    return `O endereço deve possuir no máximo ${DELIVERY_ADDRESS_MAX_LENGTH} caracteres.`;
+  }
+
+  if (
+    !/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(
+      normalizedAddress
+    )
+  ) {
+    return "Informe um endereço válido.";
+  }
+
+  const hasNumber =
+    /\d/.test(normalizedAddress);
+
+  const hasNoNumber =
+    /\bS\s*\/?\s*N\b/i.test(
+      normalizedAddress
+    );
+
+  if (!hasNumber && !hasNoNumber) {
+    return "Informe o número do endereço ou utilize S/N.";
+  }
+
+  return null;
+}
 
 export function Payment({
   paid,
@@ -228,15 +285,21 @@ export function Payment({
       return;
     }
 
-    if (
-      fulfillmentType === "delivery" &&
-      deliveryAddress.trim().length < 5
-    ) {
-      setPaymentError(
-        "Informe o endereço para entrega."
+    const normalizedDeliveryAddress =
+      normalizeDeliveryAddress(
+        deliveryAddress
       );
 
-      return;
+    if (fulfillmentType === "delivery") {
+      const addressError =
+        deliveryAddressValidationError(
+          normalizedDeliveryAddress
+        );
+
+      if (addressError) {
+        setPaymentError(addressError);
+        return;
+      }
     }
 
     if (!deliveryDate) {
@@ -326,7 +389,9 @@ export function Payment({
         const result = await onPay({
           fulfillmentType,
           deliveryAddress:
-            deliveryAddress.trim(),
+            fulfillmentType === "delivery"
+              ? normalizedDeliveryAddress
+              : "",
           deliveryDate,
           deliveryTime,
         });
@@ -815,9 +880,16 @@ export function Payment({
 
                     <input
                       required
-                      value={
-                        deliveryAddress
+                      type="text"
+                      name="deliveryAddress"
+                      minLength={
+                        DELIVERY_ADDRESS_MIN_LENGTH
                       }
+                      maxLength={
+                        DELIVERY_ADDRESS_MAX_LENGTH
+                      }
+                      autoComplete="street-address"
+                      value={deliveryAddress}
                       onChange={event => {
                         setDeliveryAddress(
                           event.target.value
