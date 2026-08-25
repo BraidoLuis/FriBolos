@@ -51,6 +51,15 @@ export function NotificationPanel({
     return icons[type] || "✓";
   }
 
+  function formatNotificationMessage(
+    message: string
+  ) {
+    return message.replace(
+      /\bcompleted\b/gi,
+      "entregue"
+    );
+  }
+
   const panelRef =
     useRef<HTMLElement>(null);
 
@@ -187,7 +196,11 @@ export function NotificationPanel({
                 <div className="notification-item-content">
                   <b>{item.title}</b>
 
-                  <p>{item.message}</p>
+                  <p>
+                    {formatNotificationMessage(
+                      item.message
+                    )}
+                  </p>
 
                   <small>
                     {notificationDate(
