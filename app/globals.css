@@ -13905,7 +13905,7 @@ input {
 }
 
 .review-suggestions {
-  display: grid;
+  display: none;
   gap: 9px;
 }
 
