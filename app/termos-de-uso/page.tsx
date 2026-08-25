@@ -1,8 +1,32 @@
 import Link from "next/link";
 
+import type {
+  Metadata,
+} from "next";
+
 import {
   ThemeToggle,
 } from "../components/theme-toggle";
+
+export const metadata: Metadata = {
+  title: "Termos de Uso",
+
+  description:
+    "Consulte as condições de utilização da plataforma e dos serviços oferecidos pelo FriBolos.",
+
+  alternates: {
+    canonical: "/termos-de-uso",
+  },
+
+  openGraph: {
+    title: "Termos de Uso | FriBolos",
+
+    description:
+      "Condições para utilização da plataforma, pedidos e encomendas FriBolos.",
+
+    url: "/termos-de-uso",
+  },
+};
 
 export default function TermsOfUsePage() {
   return (

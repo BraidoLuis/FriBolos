@@ -1,8 +1,35 @@
 import Link from "next/link";
 
+import type {
+  Metadata,
+} from "next";
+
 import {
   ThemeToggle,
 } from "../components/theme-toggle";
+
+export const metadata: Metadata = {
+  title: "Política de Privacidade",
+
+  description:
+    "Consulte como o FriBolos coleta, utiliza, armazena e protege dados pessoais.",
+
+  alternates: {
+    canonical:
+      "/politica-de-privacidade",
+  },
+
+  openGraph: {
+    title:
+      "Política de Privacidade | FriBolos",
+
+    description:
+      "Informações sobre privacidade e proteção de dados no FriBolos.",
+
+    url:
+      "/politica-de-privacidade",
+  },
+};
 
 export default function PrivacyPolicyPage() {
   return (
