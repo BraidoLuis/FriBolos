@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  useEffect,
+} from "react";
+
 import type {
   CartItem,
   Product,
@@ -32,6 +36,28 @@ export function MiniCart({
   onCheckout,
   onCatalog,
 }: MiniCartProps) {
+  useEffect(() => {
+    function handleKeyDown(
+      event: KeyboardEvent
+    ) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, [onClose]);
+
   const total = items.reduce(
     (sum, item) =>
       sum +
@@ -120,7 +146,8 @@ export function MiniCart({
                       {money(
                         priceNumber(
                           item.product.price
-                        ) * item.quantity
+                        ) *
+                          item.quantity
                       )}
                     </b>
 
