@@ -29,7 +29,10 @@ export function ClientReviewsCarousel() {
     async function loadReviews() {
       const { data, error } =
         await supabase.rpc(
-          "get_public_reviews"
+          "get_public_reviews",
+          {
+            p_limit: 6,
+          }
         );
 
       if (!componentActive) {

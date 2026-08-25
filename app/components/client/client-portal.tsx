@@ -1922,7 +1922,7 @@ export function ClientPortal({
             </div>
           </section>
 
-                    <section className="client-about-section">
+          <section className="client-about-section">
             <div className="client-about-content">
               <p className="eyebrow">
                 SOBRE A FRIBOLOS
