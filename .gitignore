@@ -39,6 +39,7 @@ next-env.d.ts
 /dist/
 /.output/
 /work/
+/.wrangler/
 
 # Vinext
 /.vinext/
