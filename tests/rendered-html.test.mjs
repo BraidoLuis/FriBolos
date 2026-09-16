@@ -181,7 +181,7 @@ test(
 
     assert.match(
       html,
-      /<title>FriBolos<\/title>/i
+      /<title>FriBolos \| Encomendas artesanais<\/title>/i,
     );
 
     assert.match(
