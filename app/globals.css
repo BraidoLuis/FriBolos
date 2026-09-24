@@ -5892,6 +5892,50 @@ td:first-child {
     rgba(122, 28, 68, 0.19);
 }
 
+.login-page-client .google-login-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.login-page-client .login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.login-page-client .login-divider::before,
+.login-page-client .login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.login-page-client .google-login-button:hover:not(:disabled) {
+  border-color: var(--berry);
+}
+
+.login-page-client .google-login-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .login-page-client
 .login-submit:hover:not(:disabled) {
   transform: translateY(-2px);
