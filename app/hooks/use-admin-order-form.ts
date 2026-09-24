@@ -34,6 +34,11 @@ type UseAdminOrderFormOptions = {
     SetStateAction<Product[]>
   >;
 
+  deliveryFeeMode:
+  | "fixed"
+  | "distance"
+  | null;
+
   orderClients: ClientProfileRow[];
 
   setAppOrders: Dispatch<
@@ -54,6 +59,7 @@ export function useAdminOrderForm({
   setAppOrders,
   setToast,
   onClose,
+  deliveryFeeMode,
 }: UseAdminOrderFormOptions) {
   const [
     savingOrder,
@@ -125,7 +131,11 @@ export function useAdminOrderForm({
       formData.get(
         "deliveryAddress"
       ) || ""
-    ).trim();
+    ).trim().replace(/\s+/g, " ");
+
+    const deliveryZipCode = String(
+      formData.get("deliveryZipCode") || ""
+    ).replace(/\D/g, "");
 
     const notes = String(
       formData.get("notes") || ""
@@ -194,14 +204,134 @@ export function useAdminOrderForm({
       return;
     }
 
+    if (!deliveryFeeMode) {
+      showToast(
+        "Aguarde as configurações da confeitaria carregarem."
+      );
+      return;
+    }
+
+    const needsDeliveryQuote =
+      fulfillmentType === "delivery" &&
+      deliveryFeeMode === "distance";
+
+    if (
+      needsDeliveryQuote &&
+      (
+        !/^\d{8}$/.test(deliveryZipCode) ||
+        deliveryAddress.length < 15 ||
+        deliveryAddress.length > 250 ||
+        !(
+          /\d/.test(deliveryAddress) ||
+          /\bS\s*\/?\s*N\b/i.test(
+            deliveryAddress
+          )
+        )
+      )
+    ) {
+      showToast(
+        "Informe CEP, rua, número ou S/N e bairro para calcular a entrega.",
+        3500
+      );
+      return;
+    }
+
     setSavingOrder(true);
 
     try {
+      let deliveryQuoteId: string | null =
+        null;
+
+      if (needsDeliveryQuote) {
+        const {
+          data: quote,
+          error: quoteError,
+        } = await supabase.functions.invoke(
+          "quote-delivery",
+          {
+            body: {
+              deliveryAddress,
+              deliveryZipCode,
+            },
+          }
+        );
+
+        if (quoteError) {
+          console.error(
+            "Erro ao cotar entrega:",
+            quoteError
+          );
+
+          let message =
+            "Não foi possível calcular a taxa de entrega.";
+
+          try {
+            const context = (
+              quoteError as {
+                context?: Response;
+              }
+            ).context;
+
+            if (context) {
+              const responseBody =
+                (await context.clone().json()) as {
+                  error?: string;
+                };
+
+              if (
+                typeof responseBody.error ===
+                "string"
+              ) {
+                message = responseBody.error;
+              }
+            }
+          } catch (contextError) {
+            console.error(
+              "Erro ao ler resposta da cotação:",
+              contextError
+            );
+          }
+
+          showToast(message, 4000);
+          return;
+        }
+
+        const feeCents =
+          quote?.deliveryFeeCents;
+
+        if (
+          typeof quote?.quoteId !== "string" ||
+          !quote.quoteId ||
+          typeof feeCents !== "number" ||
+          !Number.isSafeInteger(feeCents) ||
+          feeCents < 0
+        ) {
+          showToast(
+            "A cotação não retornou um valor válido.",
+            3500
+          );
+          return;
+        }
+
+        const confirmed =
+          window.confirm(
+            `Taxa de entrega para o CEP ${deliveryZipCode}: ${money(
+              feeCents / 100
+            )}.\n\nCriar o pedido com essa taxa?`
+          );
+
+        if (!confirmed) {
+          return;
+        }
+
+        deliveryQuoteId =
+          quote.quoteId;
+      }
       const {
         data,
         error,
       } = await supabase.rpc(
-        "create_admin_order",
+        "create_admin_order_v2",
         {
           p_client_id: clientId,
 
@@ -235,6 +365,13 @@ export function useAdminOrderForm({
             "delivery"
               ? deliveryAddress
               : null,
+          p_delivery_zip_code:
+            needsDeliveryQuote
+              ? deliveryZipCode
+              : null,
+
+          p_delivery_quote_id:
+            deliveryQuoteId,
         }
       );
 

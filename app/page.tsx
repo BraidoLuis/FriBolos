@@ -202,6 +202,17 @@ export default function Home() {
   });
 
   const {
+    storeSettings,
+    storeSettingsLoading,
+    savingStoreSettings,
+    saveStoreSettings,
+  } = useStoreSettings({
+    authLoading,
+    role,
+    setToast,
+  });
+
+  const {
     savingOrder,
     adminFulfillmentType,
     setAdminFulfillmentType,
@@ -212,6 +223,8 @@ export default function Home() {
     orderClients,
     setAppOrders,
     setToast,
+    deliveryFeeMode:
+      storeSettings?.delivery_fee_mode ?? null,
 
     onClose: () => {
       setModal(false);
@@ -237,17 +250,6 @@ export default function Home() {
   } = useNotifications({
     authLoading,
     role,
-  });
-
-  const {
-    storeSettings,
-    storeSettingsLoading,
-    savingStoreSettings,
-    saveStoreSettings,
-  } = useStoreSettings({
-    authLoading,
-    role,
-    setToast,
   });
 
   function notificationTarget(
@@ -654,6 +656,10 @@ export default function Home() {
         <AdminOrderModal
           products={products}
           clients={orderClients}
+
+          deliveryFeeMode={
+            storeSettings?.delivery_fee_mode ?? null
+          }
 
           clientsLoading={
             orderClientsLoading

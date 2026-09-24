@@ -316,6 +316,7 @@ export function Settings({
             </small>
           </label>
 
+
           <label>
             Taxa por km (R$)
 

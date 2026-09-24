@@ -25,7 +25,10 @@ type AdminOrderModalProps = {
   saving: boolean;
 
   deliveryFee: number;
-
+  deliveryFeeMode:
+    | "fixed"
+    | "distance"
+    | null;
   fulfillmentType:
     FulfillmentType;
 
@@ -46,6 +49,7 @@ export function AdminOrderModal({
   clientsLoading,
   saving,
   deliveryFee,
+  deliveryFeeMode,
   fulfillmentType,
   setFulfillmentType,
   onSubmit,
@@ -220,11 +224,11 @@ export function AdminOrderModal({
 
               <option value="delivery">
                 Entrega
-                {deliveryFee > 0
-                  ? ` — ${money(
-                      deliveryFee
-                    )}`
-                  : ""}
+                {deliveryFeeMode === "fixed"
+                  ? ` — ${money(deliveryFee)}`
+                  : deliveryFeeMode === "distance"
+                    ? " — calculada pelo CEP"
+                    : ""}
               </option>
             </select>
           </label>
@@ -240,6 +244,23 @@ export function AdminOrderModal({
                 placeholder="Rua, número, bairro e complemento"
               />
             </label>
+          )}
+
+          {fulfillmentType === "delivery" &&
+            deliveryFeeMode === "distance" && (
+              <label>
+                CEP da entrega
+
+                <input
+                  required
+                  name="deliveryZipCode"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={9}
+                  pattern="[0-9]{5}-?[0-9]{3}"
+                  placeholder="00000-000"
+                />
+              </label>
           )}
 
           <label>
@@ -284,6 +305,7 @@ export function AdminOrderModal({
             className="primary"
             disabled={
               saving ||
+              !deliveryFeeMode ||
               clientsLoading
             }
           >
