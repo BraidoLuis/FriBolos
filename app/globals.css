@@ -12669,6 +12669,13 @@ i {
   line-height: 1.5;
 }
 
+.delivery-quote-explanation {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .delivery-address-field label {
   display: grid;
   gap: 7px;

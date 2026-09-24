@@ -1131,6 +1131,12 @@ export function Payment({
                       </div>
                     </label>
 
+                    <p className="delivery-quote-explanation">
+                      O frete é calculado pela distância do trajeto de carro entre a
+                      confeitaria e o endereço informado. O valor inclui uma taxa base
+                      e um preço por quilômetro percorrido.
+                    </p>
+
                     <button
                       type="button"
                       className="delivery-quote-button"
