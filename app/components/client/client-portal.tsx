@@ -567,6 +567,10 @@ export function ClientPortal({
           );
 
           sessionStorage.removeItem(
+            "stripe-checkout-snapshot"
+          );
+
+          sessionStorage.removeItem(
             "stripe-checkout-order-id"
           );
 
@@ -625,7 +629,7 @@ export function ClientPortal({
         data,
         error: orderError,
       } = await supabase.rpc(
-        "create_client_order",
+        "create_client_order_v2",
         {
           p_items: items,
 
@@ -641,9 +645,18 @@ export function ClientPortal({
             options.fulfillmentType,
 
           p_delivery_address:
-            options.fulfillmentType ===
-            "delivery"
+            options.fulfillmentType === "delivery"
               ? options.deliveryAddress
+              : null,
+
+          p_delivery_zip_code:
+            options.fulfillmentType === "delivery"
+              ? options.deliveryZipCode || null
+              : null,
+
+          p_delivery_quote_id:
+            options.fulfillmentType === "delivery"
+              ? options.deliveryQuoteId
               : null,
         }
       );
@@ -665,9 +678,11 @@ export function ClientPortal({
       const createdOrder = data as {
         order_id: string;
         order_number: number | string;
-      };
+        total_amount: number | string;
+        delivery_fee: number | string;
+      } | null;
 
-      if (!createdOrder.order_id) {
+      if (!createdOrder?.order_id) {
         console.error(
           "A função não retornou o ID do pedido:",
           createdOrder
@@ -685,13 +700,13 @@ export function ClientPortal({
       // setCart([]);
       // await loadClientOrders();
 
-      return {
-        success: true,
-        orderId: createdOrder.order_id,
-        orderNumber: Number(
-          createdOrder.order_number
-        ),
-      };
+        return {
+          success: true,
+          orderId: createdOrder.order_id,
+          orderNumber: Number(createdOrder.order_number),
+          totalAmount: Number(createdOrder.total_amount),
+          deliveryFeeAmount: Number(createdOrder.delivery_fee),
+        };
     } catch (error) {
       console.error(
         "Erro inesperado ao criar pedido:",
@@ -1541,6 +1556,10 @@ export function ClientPortal({
       */
       sessionStorage.removeItem(
         "stripe-checkout-cart"
+      );
+
+      sessionStorage.removeItem(
+        "stripe-checkout-snapshot"
       );
 
       sessionStorage.setItem(
@@ -2921,6 +2940,10 @@ export function ClientPortal({
               paid
                 ? purchasedItems
                 : cart
+            }
+
+            deliveryFeeMode={
+              storeSettings?.delivery_fee_mode ?? "fixed"
             }
 
             onPay={createOrderFromCart}

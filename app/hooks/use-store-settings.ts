@@ -102,6 +102,8 @@ export function useStoreSettings({
           business_weekdays,
           minimum_order_value,
           delivery_fee,
+          delivery_fee_mode,
+          delivery_fee_per_km,
           accepts_orders,
           created_at,
           updated_at
@@ -196,12 +198,84 @@ export function useStoreSettings({
       ).replace(",", ".")
     );
 
-    const deliveryFee = Number(
-      String(
-        formData.get("deliveryFee") ||
-          "0"
-      ).replace(",", ".")
+    const deliveryFeeMode = String(
+      formData.get("deliveryFeeMode") || ""
     );
+
+    const deliveryFeeText = String(
+      formData.get("deliveryFee") ?? ""
+    )
+      .trim()
+      .replace(",", ".");
+
+    const deliveryFeePerKmText = String(
+      formData.get("deliveryFeePerKm") ?? ""
+    )
+      .trim()
+      .replace(",", ".");
+
+    const deliveryFee = Number(
+      deliveryFeeText
+    );
+
+    const deliveryFeePerKm = Number(
+      deliveryFeePerKmText
+    );
+
+    const validAmount = /^\d+(\.\d{1,2})?$/;
+
+    if (
+      !["fixed", "distance"].includes(
+        deliveryFeeMode
+      ) ||
+      !validAmount.test(deliveryFeeText) ||
+      !validAmount.test(deliveryFeePerKmText) ||
+      !Number.isFinite(deliveryFee) ||
+      !Number.isFinite(deliveryFeePerKm)
+    ) {
+      showToast(
+        "Informe o modo de entrega e valores válidos, com até duas casas decimais.",
+        3200
+      );
+      return;
+    }
+
+    if (deliveryFeeMode === "distance") {
+      const originAddress = String(
+        formData.get("address") || ""
+      ).trim();
+
+      const originCity = String(
+        formData.get("city") || ""
+      ).trim();
+
+      const originState = String(
+        formData.get("state") || ""
+      )
+        .trim()
+        .toUpperCase();
+
+      const originZipCode = String(
+        formData.get("zipCode") || ""
+      ).replace(/\D/g, "");
+
+      if (
+        originAddress.length < 15 ||
+        !(/\d/.test(originAddress) ||
+          /\bS\s*\/?\s*N\b/i.test(
+            originAddress
+          )) ||
+        !originCity ||
+        !/^[A-Z]{2}$/.test(originState) ||
+        !/^\d{8}$/.test(originZipCode)
+      ) {
+        showToast(
+          "Para calcular por distância, informe o endereço completo da confeitaria, com rua, número ou S/N, cidade, UF e CEP.",
+          4000
+        );
+        return;
+      }
+    }
 
     setSavingStoreSettings(true);
 
@@ -294,6 +368,9 @@ export function useStoreSettings({
             Number.isFinite(deliveryFee)
               ? deliveryFee
               : 0,
+          
+          delivery_fee_per_km: deliveryFeePerKm,
+          delivery_fee_mode: deliveryFeeMode,
 
           accepts_orders:
             formData.get(

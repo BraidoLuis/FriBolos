@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { supabase } from "../../lib/supabase";
+
+import {
+  activeDeliveryQuote,
+  normalizeDeliveryZip,
+  requestDeliveryQuote,
+  type DeliveryQuote,
+} from "../../lib/delivery-quote";
 
 import {
   money,
@@ -85,6 +92,7 @@ export function Payment({
   confirmedOrderNumber,
   minimumOrderValue,
   deliveryFee,
+  deliveryFeeMode,
   acceptsOrders,
   storeAddress,
   storeCity,
@@ -110,6 +118,7 @@ export function Payment({
 
   minimumOrderValue: number;
   deliveryFee: number;
+  deliveryFeeMode: "fixed" | "distance";
   acceptsOrders: boolean;
   storeAddress: string;
   storeCity: string;
@@ -134,6 +143,15 @@ export function Payment({
     setDeliveryAddress,
   ] = useState("");
 
+  const [deliveryZipCode, setDeliveryZipCode] =
+  useState("");
+
+  const [deliveryQuote, setDeliveryQuote] =
+    useState<DeliveryQuote | null>(null);
+
+  const [quotingDelivery, setQuotingDelivery] =
+    useState(false);
+
   const [
     deliveryDate,
     setDeliveryDate,
@@ -143,36 +161,6 @@ export function Payment({
     deliveryTime,
     setDeliveryTime,
   ] = useState("");
-
-  const [
-    pendingOrder,
-    setPendingOrder,
-  ] = useState<{
-    id: string;
-    number: number;
-  } | null>(() => {
-    const savedOrderId =
-      sessionStorage.getItem(
-        "stripe-checkout-order-id"
-      );
-
-    const savedOrderNumber =
-      sessionStorage.getItem(
-        "stripe-checkout-order-number"
-      );
-
-    if (
-      !savedOrderId ||
-      !savedOrderNumber
-    ) {
-      return null;
-    }
-
-    return {
-      id: savedOrderId,
-      number: Number(savedOrderNumber),
-    };
-  });
 
   const [processing, setProcessing] =
     useState(false);
@@ -188,13 +176,31 @@ export function Payment({
     0
   );
 
+  const needsQuote =
+    fulfillmentType === "delivery" &&
+    deliveryFeeMode === "distance";
+
+  const currentQuote = needsQuote
+    ? activeDeliveryQuote(
+        deliveryQuote,
+        deliveryAddress,
+        deliveryZipCode
+      )
+    : null;
+
   const appliedDeliveryFee =
-    fulfillmentType === "delivery"
-      ? deliveryFee
-      : 0;
+    fulfillmentType === "pickup"
+      ? 0
+      : needsQuote
+        ? currentQuote
+          ? currentQuote.deliveryFeeCents / 100
+          : null
+        : deliveryFee;
 
   const checkoutTotal =
-    subtotal + appliedDeliveryFee;
+    appliedDeliveryFee === null
+      ? null
+      : subtotal + appliedDeliveryFee;
 
   const pickupAddress = [
     storeAddress,
@@ -261,6 +267,44 @@ export function Payment({
       0
     ) || 0;
 
+  async function calculateDeliveryFee() {
+    if (quotingDelivery || processing) {
+      return;
+    }
+
+    const addressError =
+      deliveryAddressValidationError(
+        deliveryAddress
+      );
+
+    if (addressError) {
+      setPaymentError(addressError);
+      return;
+    }
+
+    setQuotingDelivery(true);
+    setPaymentError("");
+    setDeliveryQuote(null);
+
+    try {
+      const quote =
+        await requestDeliveryQuote(
+          deliveryAddress,
+          deliveryZipCode
+        );
+
+      setDeliveryQuote(quote);
+    } catch (error) {
+      setPaymentError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível calcular o frete."
+      );
+    } finally {
+      setQuotingDelivery(false);
+    }
+  }
+
   async function confirmOrder() {
     setPaymentError("");
 
@@ -300,6 +344,21 @@ export function Payment({
         setPaymentError(addressError);
         return;
       }
+    }
+
+    const selectedQuote = needsQuote
+      ? activeDeliveryQuote(
+          deliveryQuote,
+          deliveryAddress,
+          deliveryZipCode
+        )
+      : null;
+
+    if (needsQuote && !selectedQuote) {
+      setPaymentError(
+        "Calcule novamente o frete antes de pagar."
+      );
+      return;
     }
 
     if (!deliveryDate) {
@@ -371,19 +430,120 @@ export function Payment({
       return;
     }
 
+    if (
+      typeof checkoutTotal !== "number" ||
+      !Number.isFinite(checkoutTotal) ||
+      typeof appliedDeliveryFee !== "number" ||
+      !Number.isFinite(appliedDeliveryFee)
+    ) {
+      setPaymentError(
+        "Não foi possível confirmar o valor da entrega. Confira o endereço e tente novamente."
+      );
+      return;
+    }
+
     setProcessing(true);
 
     try {
+      const checkoutSnapshot = JSON.stringify({
+        items: cart
+          .map(item => ({
+            id: String(item.product.id),
+            quantity: item.quantity,
+          }))
+          .sort((a, b) => a.id.localeCompare(b.id)),
+        fulfillmentType,
+        deliveryAddress:
+          fulfillmentType === "delivery"
+            ? normalizedDeliveryAddress
+            : "",
+        deliveryZipCode:
+          fulfillmentType === "delivery"
+            ? deliveryZipCode.replace(/\D/g, "")
+            : "",
+        deliveryDate,
+        deliveryTime: deliveryTime.slice(0, 5),
+        totalCents: Math.round(checkoutTotal * 100),
+        deliveryFeeCents: Math.round(
+          appliedDeliveryFee * 100
+        ),
+      });
+
       const savedPendingOrderId =
         sessionStorage.getItem(
           "stripe-checkout-order-id"
         );
 
-      let order =
-        pendingOrder &&
-        savedPendingOrderId === pendingOrder.id
-          ? pendingOrder
-          : null;
+      let order: {
+        id: string;
+        number: number;
+      } | null = null;
+
+      if (savedPendingOrderId) {
+        const {
+          data: savedOrder,
+          error: savedOrderError,
+        } = await supabase
+          .from("orders")
+          .select(
+            "id, order_number, total_amount, delivery_fee, status, payment_status"
+          )
+          .eq("id", savedPendingOrderId)
+          .maybeSingle();
+
+        if (savedOrderError || !savedOrder) {
+          console.error(
+            "Não foi possível conferir o pedido pendente:",
+            savedOrderError
+          );
+          setPaymentError(
+            "Não foi possível conferir seu pedido anterior. Consulte Meus pedidos antes de tentar novamente."
+          );
+          return;
+        }
+
+        if (
+          savedOrder.payment_status !== "pending" ||
+          savedOrder.status === "cancelled"
+        ) {
+          setPaymentError(
+            "Esse pedido não está disponível para este pagamento. Confira a situação em Meus pedidos."
+          );
+          return;
+        }
+
+        const savedSnapshot =
+          sessionStorage.getItem(
+            "stripe-checkout-snapshot"
+          );
+
+        const sameTotal =
+          Math.round(
+            Number(savedOrder.total_amount) * 100
+          ) === Math.round(checkoutTotal * 100);
+
+        const sameDeliveryFee =
+          Math.round(
+            Number(savedOrder.delivery_fee) * 100
+          ) ===
+          Math.round(appliedDeliveryFee * 100);
+
+        if (
+          savedSnapshot !== checkoutSnapshot ||
+          !sameTotal ||
+          !sameDeliveryFee
+        ) {
+          setPaymentError(
+            `O pedido #${savedOrder.order_number} já foi criado com outros dados ou valores. Abra Meus pedidos para conferir e pagar esse pedido.`
+          );
+          return;
+        }
+
+        order = {
+          id: savedOrder.id,
+          number: Number(savedOrder.order_number),
+        };
+      }
 
       if (!order) {
         const result = await onPay({
@@ -394,6 +554,17 @@ export function Payment({
               : "",
           deliveryDate,
           deliveryTime,
+          deliveryZipCode:
+          fulfillmentType === "delivery"
+            ? normalizeDeliveryZip(
+                deliveryZipCode
+              )
+            : "",
+
+          deliveryQuoteId:
+            needsQuote
+              ? selectedQuote?.quoteId ?? null
+              : null,
         });
 
         if (!result.success) {
@@ -406,7 +577,34 @@ export function Payment({
           number: result.orderNumber,
         };
 
-        setPendingOrder(order);
+        sessionStorage.setItem(
+          "stripe-checkout-order-id",
+          order.id
+        );
+
+        sessionStorage.setItem(
+          "stripe-checkout-order-number",
+          String(order.number)
+        );
+
+        if (
+          !Number.isFinite(result.totalAmount) ||
+          !Number.isFinite(result.deliveryFeeAmount) ||
+          Math.round(result.totalAmount * 100) !==
+            Math.round(checkoutTotal * 100) ||
+          Math.round(result.deliveryFeeAmount * 100) !==
+            Math.round(appliedDeliveryFee * 100)
+        ) {
+          setPaymentError(
+            `O pedido #${order.number} foi criado, mas o valor calculado pelo sistema difere do exibido. Confira o valor em Meus pedidos antes de pagar.`
+          );
+          return;
+        }
+
+        sessionStorage.setItem(
+          "stripe-checkout-snapshot",
+          checkoutSnapshot
+        );
 
       }
 
@@ -774,7 +972,7 @@ export function Payment({
                   setFulfillmentType(
                     "pickup"
                   );
-
+                  setDeliveryQuote(null);
                   setPaymentError("");
                 }}
               >
@@ -822,8 +1020,14 @@ export function Payment({
                   </strong>
 
                   <small>
-                    Taxa de{" "}
-                    {money(deliveryFee)}
+                    {deliveryFeeMode === "distance"
+                      ? currentQuote
+                        ? `Frete de ${money(
+                            currentQuote.deliveryFeeCents /
+                              100
+                          )}`
+                        : "Frete calculado pelo endereço"
+                      : `Taxa de ${money(deliveryFee)}`}
                   </small>
                 </div>
 
@@ -894,13 +1098,70 @@ export function Payment({
                         setDeliveryAddress(
                           event.target.value
                         );
-
+                        setDeliveryQuote(null);
                         setPaymentError("");
                       }}
                       placeholder="Rua, número, bairro e complemento"
                     />
                   </div>
                 </label>
+                {needsQuote && (
+                  <>
+                    <label>
+                      <span>CEP de entrega</span>
+
+                      <div>
+                        <i>⌖</i>
+
+                        <input
+                          required
+                          name="deliveryZipCode"
+                          inputMode="numeric"
+                          autoComplete="postal-code"
+                          value={deliveryZipCode}
+                          onChange={event => {
+                            setDeliveryZipCode(
+                              event.target.value
+                            );
+                            setDeliveryQuote(null);
+                            setPaymentError("");
+                          }}
+                          placeholder="00000-000"
+                        />
+                      </div>
+                    </label>
+
+                    <button
+                      type="button"
+                      className="delivery-quote-button"
+                      disabled={
+                        quotingDelivery || processing
+                      }
+                      onClick={calculateDeliveryFee}
+                    >
+                      {quotingDelivery
+                        ? "Calculando entrega..."
+                        : "Calcular entrega"}
+                    </button>
+
+                    {currentQuote && (
+                      <small className="delivery-quote-result">
+                        Distância:{" "}
+                        {(
+                          currentQuote.distanceMeters /
+                          1000
+                        ).toFixed(1)}{" "}
+                        km
+                        {" • "}
+                        Frete:{" "}
+                        {money(
+                          currentQuote.deliveryFeeCents /
+                            100
+                        )}
+                      </small>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </section>
@@ -1083,16 +1344,17 @@ export function Payment({
               className="confirm-payment"
               disabled={
                 processing ||
-                !acceptsOrders
+                !acceptsOrders ||
+                checkoutTotal === null
               }
               onClick={confirmOrder}
             >
               <span>
                 {processing
                   ? "Abrindo ambiente seguro..."
-                  : `Pagar ${money(
-                      checkoutTotal
-                    )}`}
+                  : checkoutTotal === null
+                    ? "Calcule o frete"
+                    : `Pagar ${money(checkoutTotal)}`}
               </span>
 
               <b>
@@ -1200,12 +1462,11 @@ export function Payment({
               </span>
 
               <b>
-                {fulfillmentType ===
-                "delivery"
-                  ? money(
-                      appliedDeliveryFee
-                    )
-                  : "Grátis"}
+                {fulfillmentType === "pickup"
+                  ? "Grátis"
+                  : appliedDeliveryFee === null
+                    ? "A calcular"
+                    : money(appliedDeliveryFee)}
               </b>
             </div>
           </div>
@@ -1214,7 +1475,9 @@ export function Payment({
             <span>Total</span>
 
             <strong>
-              {money(checkoutTotal)}
+              {checkoutTotal === null
+                ? "Calcule o frete"
+                : money(checkoutTotal)}
             </strong>
           </div>
 

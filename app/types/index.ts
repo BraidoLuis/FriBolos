@@ -30,6 +30,8 @@ export type CheckoutOrderOptions = {
   deliveryAddress: string;
   deliveryDate: string;
   deliveryTime: string;
+  deliveryZipCode: string;
+  deliveryQuoteId: string | null;
 };
 
 export type OrderFilter =
@@ -226,6 +228,8 @@ export type StoreSettings = {
 
   minimum_order_value: number;
   delivery_fee: number;
+  delivery_fee_mode: "fixed" | "distance";
+  delivery_fee_per_km: number | string;
 
   accepts_orders: boolean;
 
@@ -238,6 +242,8 @@ export type OrderCreationResult =
       success: true;
       orderId: string;
       orderNumber: number;
+      totalAmount: number;
+      deliveryFeeAmount: number;
     }
   | {
       success: false;

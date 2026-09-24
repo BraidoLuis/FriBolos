@@ -281,15 +281,52 @@ export function Settings({
           </label>
 
           <label>
-            Taxa de entrega
+            Cálculo da entrega
+
+            <select
+              name="deliveryFeeMode"
+              defaultValue={
+                settings.delivery_fee_mode || "fixed"
+              }
+            >
+              <option value="fixed">
+                Taxa fixa
+              </option>
+
+              <option value="distance">
+                Taxa base + distância
+              </option>
+            </select>
+          </label>
+
+          <label>
+            Taxa base (R$)
 
             <input
+              required
               name="deliveryFee"
               type="number"
               min="0"
               step="0.01"
+              defaultValue={settings.delivery_fee}
+            />
+
+            <small>
+              No modo fixo, este é o valor total da entrega.
+            </small>
+          </label>
+
+          <label>
+            Taxa por km (R$)
+
+            <input
+              required
+              name="deliveryFeePerKm"
+              type="number"
+              min="0"
+              step="0.01"
               defaultValue={
-                settings.delivery_fee
+                settings.delivery_fee_per_km ?? 0
               }
             />
           </label>
